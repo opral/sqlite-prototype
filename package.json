@@ -1,0 +1,8 @@
+{
+  "name": "my-workspaces-powered-project",
+  "workspaces": [
+    "fink",
+    "inlang-sdk",
+    "lix-sdk"
+  ]
+}
