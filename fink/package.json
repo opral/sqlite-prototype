@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lit-labs/preact-signals": "^1.0.2",
+    "@lit/task": "^1.0.1",
+    "inlang-sdk": "*",
     "lit": "^3.1.4"
   },
   "devDependencies": {

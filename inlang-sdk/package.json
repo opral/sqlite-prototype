@@ -1,0 +1,10 @@
+{
+  "name": "inlang-sdk",
+  "dependencies": {
+    "@sqlite.org/sqlite-wasm": "^3.46.0-build2"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
