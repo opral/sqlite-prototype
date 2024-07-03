@@ -1,40 +1,20 @@
-import { sqlite3Worker1Promiser } from "@sqlite.org/sqlite-wasm";
+import { Kysely } from "kysely";
 import { importProjectIntoOPFS } from "./importProject";
+import { SQLocalKysely } from "sqlocal/kysely";
+import { Database } from "./schema";
 
 /**
  *
  */
 export async function loadProject(blob: Blob) {
-  openSqlite(blob);
-  return {};
-}
-
-async function openSqlite(blob: Blob) {
-  // storing the blob in OPFS for fasted performance
-
+  // naively overwriting the existing db
+  // todo - use uuids to store projects and avoid conflicts
   await importProjectIntoOPFS({ blob, path: "test.inlang" });
+  const { dialect } = new SQLocalKysely("test.inlang");
+  const db = new Kysely<Database>({ dialect });
 
-  const promiser: any = await new Promise((resolve) => {
-    const _promiser = sqlite3Worker1Promiser({
-      onready: () => resolve(_promiser),
-    });
-  });
-
-  const openResponse = await promiser("open", {
-    filename: `file:test.inlang?vfs=opfs`,
-  });
-
-  const { dbId } = openResponse;
-
-  const x = await promiser("exec", {
-    dbId,
-    sql: "select * from employees limit 10",
-  });
-
-  console.log({ dbId, x });
-}
-
-// https://github.com/sqlite/sqlite-wasm/issues/53
-declare module "@sqlite.org/sqlite-wasm" {
-  export function sqlite3Worker1Promiser(...args: any): any;
+  return {
+    query: db,
+    settings: db.selectFrom("settings"),
+  };
 }

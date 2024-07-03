@@ -1,10 +1,10 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement } from "lit/decorators.js";
-import { loadProject } from "inlang-sdk";
+import { loadProject, newProject } from "inlang-sdk";
 import { Ref, createRef, ref } from "lit/directives/ref.js";
 import { project } from "./state";
 import { SignalWatcher } from "@lit-labs/preact-signals";
-import "./project";
+import "./project-view";
 
 @customElement("fink-app")
 export class FinkApp extends SignalWatcher(LitElement) {
@@ -69,7 +69,16 @@ export class InlangFileExport extends LitElement {
 
 @customElement("create-project")
 export class CreateProject extends LitElement {
+  async handleCreateProject() {
+    const file = await newProject();
+    project.value = await loadProject(file);
+  }
+
   render() {
-    return html` <button>Create and load new project</button> `;
+    return html`
+      <button @click=${this.handleCreateProject}>
+        Create and load new project
+      </button>
+    `;
   }
 }
