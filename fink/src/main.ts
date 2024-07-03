@@ -1,11 +1,13 @@
-import { LitElement, html } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { customElement } from "lit/decorators.js";
-import { loadProject, importProjectIntoOPFS } from "inlang-sdk";
+import { loadProject } from "inlang-sdk";
 import { Ref, createRef, ref } from "lit/directives/ref.js";
 import { project } from "./state";
+import { SignalWatcher } from "@lit-labs/preact-signals";
+import "./project";
 
 @customElement("fink-app")
-export class FinkApp extends LitElement {
+export class FinkApp extends SignalWatcher(LitElement) {
   render() {
     return html`
       <h1>Welcome to fink 2.0!</h1>
@@ -16,6 +18,7 @@ export class FinkApp extends LitElement {
       </div>
       <available-projects></available-projects>
       <hr style="margin-top: 1rem;" />
+      ${project.value ? html`<project-view></project-view>` : nothing}
     `;
   }
 }
@@ -24,6 +27,7 @@ export class FinkApp extends LitElement {
 export class InlangFileImport extends LitElement {
   async handleFileSelection(event: any) {
     project.value = await loadProject(event.target.files[0]);
+    console.log({ project: project.value });
   }
 
   inputRef: Ref<HTMLInputElement> = createRef();
