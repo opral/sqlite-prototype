@@ -1,4 +1,3 @@
-import { Generated } from "kysely";
 import { Pattern } from "./pattern";
 
 export type Database = {

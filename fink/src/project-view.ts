@@ -13,11 +13,9 @@ export class ProjectView extends LitElement {
   loadBundlesTask = new Task(this, {
     args: () => [this.triggerRerender],
     task: async () => {
-      const result = await project.value?.query
-        .selectFrom("bundle")
-        .selectAll()
-        .execute();
-      return result;
+      const bundles = await project.value?.bundle.select.execute();
+      console.log(bundles);
+      return bundles;
     },
   });
 
@@ -25,7 +23,7 @@ export class ProjectView extends LitElement {
     return html`
       <button
         @click=${async () => {
-          await project.value?.query
+          await project.value?.db
             .insertInto("bundle")
             .values({
               id: generateBundleId(),
@@ -48,6 +46,7 @@ export class ProjectView extends LitElement {
                 (bundle) => html`
                   <li>
                     <h3>${bundle.id}</h3>
+                    <p>${bundle.messages.length} messages</p>
                   </li>
                 `
               )
