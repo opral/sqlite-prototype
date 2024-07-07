@@ -32,10 +32,6 @@ export async function newProject(): Promise<Blob> {
       match TEXT NOT NULL,
       pattern TEXT NOT NULL
     );
-
-    INSERT INTO Bundle (id, alias) VALUES ('human_elephant', 'default');
-    INSERT INTO Message (id, bundleId, locale, declarations, selectors) VALUES ('hello', 'human_elephant', 'en', 'Hello, World!', 'body');
-    INSERT INTO Message (id, bundleId, locale, declarations, selectors) VALUES ('goodbye', 'human_elephant', 'en', 'Goodbye, World!', 'body');
       `;
     const fileHandle = await opfsRoot.getFileHandle(interimDbName);
     const file = await fileHandle.getFile();

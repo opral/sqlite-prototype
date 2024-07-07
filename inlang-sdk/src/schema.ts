@@ -10,7 +10,7 @@ export type Database = {
 export type Bundle = {
   id: string;
   // todo make alias relational
-  alias: string;
+  alias: string; // JSON
   // messages[] @relation
 };
 
@@ -19,8 +19,8 @@ export type Message = {
   // @relation to Bundle
   bundleId: Bundle["id"];
   locale: string;
-  declarations: string;
-  selectors: string;
+  declarations: string; // JSON
+  selectors: string; // JSON
   // variants[] @relation
 };
 
