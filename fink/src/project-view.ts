@@ -126,9 +126,6 @@ export class ProjectView extends LitElement {
               .messageBundle=${bundle}
               .settings=${mockSettings}
               .mockInstalledLintRules=${mockInstalledLintRules}
-              @change-message-bundle=${(data: any) => {
-                console.log(data);
-              }}
             ></inlang-message-bundle>`
           )}`}
     `;
@@ -340,31 +337,6 @@ const mockSettings = {
     "https://cdn.jsdelivr.net/npm/@inlang/message-lint-rule-missing-translation@latest/dist/index.js",
     "https://cdn.jsdelivr.net/npm/@inlang/message-lint-rule-without-source@latest/dist/index.js",
   ],
-};
-
-const xFakeBundle = {
-  id: "message-bundle-id",
-  messages: [
-    {
-      id: "message-id",
-      locale: "en",
-      selectors: [],
-      declarations: [],
-      variants: [
-        {
-          id: "variant-id",
-          match: [],
-          pattern: [{ type: "text", value: "{count} new messages" }],
-        },
-      ],
-    },
-  ],
-  alias: {
-    default: "frontend_button_text",
-  },
-  // 	default: "frontend_button_text",
-  // 	ios: "frontendButtonText",
-  // },
 };
 
 const mockInstalledLintRules = [
