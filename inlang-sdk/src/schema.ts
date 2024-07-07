@@ -29,7 +29,7 @@ export type Variant = {
   // @relation to Message
   messageId: Message["id"];
   match: string;
-  pattern: Pattern;
+  pattern: Pattern; // JSON
 };
 
 export type Settings = {

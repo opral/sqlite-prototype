@@ -8,34 +8,70 @@ import { generateBundleId } from "inlang-sdk";
 export class ProjectView extends LitElement {
   // manual rerender trigger until .subscribe() method exists
   @state()
-  triggerRerender = 0;
+  crudOperationExecuted = 0;
+
+  @state()
+  numBundlesToGenerate = 1;
 
   loadBundlesTask = new Task(this, {
-    args: () => [this.triggerRerender],
+    args: () => [this.crudOperationExecuted],
     task: async () => {
-      const bundles = await project.value?.bundle.select.execute();
-      console.log(bundles);
+      // limit to 100 bundles in case some creates 100k bundles
+      const bundles = await project.value?.bundle.select.limit(100).execute();
       return bundles;
     },
   });
 
+  numBundles = new Task(this, {
+    args: () => [this.crudOperationExecuted],
+    task: async () => {
+      const numBundles = await project.value!
+        .sql`select count(*) as count from bundle`;
+      console.log({ numBundles });
+      return numBundles[0].count;
+    },
+  });
+
+  async createBundles() {
+    let bundles = [];
+    for (let i = 0; i < this.numBundlesToGenerate; i++) {
+      bundles.push({
+        id: generateBundleId(),
+        alias: "test",
+      });
+      // manual batching to avoid too many db operations
+      if (bundles.length > 10000) {
+        await project.value!.bundle.insert.values(bundles).execute();
+        bundles = [];
+      }
+    }
+    // insert remaining bundles
+    if (bundles.length > 0) {
+      await project.value!.bundle.insert.values(bundles).execute();
+    }
+    this.crudOperationExecuted++;
+  }
+
   render() {
     return html`
-      <button
-        @click=${async () => {
-          await project.value?.db
-            .insertInto("bundle")
-            .values({
-              id: generateBundleId(),
-              alias: "test",
-            })
-            .execute();
-          this.triggerRerender++;
-        }}
-      >
-        Create a bundle
-      </button>
-
+      <div style="display: flex; gap: 1rem;">
+        <input
+          .value=${this.numBundlesToGenerate}
+          @change=${(event: any) =>
+            (this.numBundlesToGenerate = event.target.value)}
+          type="number"
+        />
+        <button @click=${this.createBundles}>
+          Create ${this.numBundlesToGenerate} Bundles
+        </button>
+        <p>
+          ${this.numBundles.render({
+            pending: () => "Loading...",
+            error: (error) => `Error: ${error}`,
+            complete: (numBundles) => `Currently ${numBundles} bundles exist.`,
+          })}
+        </p>
+      </div>
       <h2>Bundles</h2>
       ${this.loadBundlesTask.render({
         pending: () => html`<p>Loading...</p>`,

@@ -7,5 +7,6 @@ export function generateBundleId() {
   return humanId({
     separator: "_",
     capitalize: false,
+    adjectiveCount: 3,
   });
 }

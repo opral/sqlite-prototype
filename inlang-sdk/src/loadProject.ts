@@ -11,7 +11,7 @@ export async function loadProject(blob: Blob) {
   // naively overwriting the existing db
   // todo - use uuids to store projects and avoid conflicts
   await importProjectIntoOPFS({ blob, path: "test.inlang" });
-  const { dialect } = new SQLocalKysely("test.inlang");
+  const { dialect, sql } = new SQLocalKysely("test.inlang");
   const db = new Kysely<Database>({
     dialect,
     plugins: [new ParseJSONResultsPlugin()],
@@ -19,8 +19,10 @@ export async function loadProject(blob: Blob) {
 
   return {
     db,
+    sql,
     bundle: {
       select: selectAllWithNestedMessages(db),
+      insert: db.insertInto("bundle"),
     },
     settings: db.selectFrom("settings"),
   };
