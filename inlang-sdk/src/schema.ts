@@ -4,6 +4,7 @@ export type Database = {
   bundle: Bundle;
   message: Message;
   variant: Variant;
+  // todo - move out of database
   settings: Settings;
 };
 
