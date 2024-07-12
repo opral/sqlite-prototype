@@ -1,17 +1,8 @@
 import { loadProject } from "./loadProject";
 
-const plugin = {
-  glob: "*.zettel",
-  onChange({ ref, source, incoming }) {},
-};
+const repo = openRepo();
 
-const x = openRepo();
-
-const csv = repo.file.select().where("path", "=", "project.csv").first();
-
-const updated = update(csv);
-
-repo.file.update(updated).where("path", "=", "project.csv");
+const project = await loadProject(repo);
 
 repo.commit();
 
@@ -33,10 +24,10 @@ async function newProject() {
 
   // create lix plugin
   await repo.file.create(
-    "/lix/plugin/zettel-plugin.js",
+    "/lix/plugin/inlang-plugin.js",
     `
     export const plugin = {
-      glob: "*.zettel",
+      glob: "*.inlang",
       onChange({ ref, source, incoming }) {},
     };
   `
@@ -51,22 +42,22 @@ async function newProject() {
   `
   );
   await repo.file.create(
-    "/lix/notification/if-limits-exceeds-500.yaml",
+    "/lix/notification/too-many-variants.yaml",
     `
       - triggerOn: "bundle"
-      - if (bundle.messages.length > 500)
+      - if (bundle.messages.length > 20)
       ...
   `
   );
   // write file to user disk
-  await fs.writeFile("/my-cool-project.zettel", await toBlob(repo));
+  await fs.writeFile("/my-cool-project.inlang", await toBlob(repo));
 }
 
 // ---------- load project from remote ----------------------------
 
-const file = await lix.fromRemote("https://example.com/my-cool-project.zettel");
+const repo = await fromRemote("https://example.com/my-cool-project.inlang");
 
-const project = await loadProject(file);
+const project = await loadProject(repo);
 
 async function loadProject(blob: Blob) {
   const repo = await openRepo(blob);
@@ -76,10 +67,9 @@ async function loadProject(blob: Blob) {
   return {
     sqlite,
     // theoretical workaround for not writing sqlite to lix fs
-    // TODO: look up sqlite fs adapter
-    close: async () => {
-      const file = sqlite.toBlob();
-      await repo.file.update(file).where("path", "=", "db.sqlite");
-    },
+    // close: async () => {
+    //   const file = sqlite.toBlob();
+    //   await repo.file.update(file).where("path", "=", "db.sqlite");
+    // },
   };
 }
