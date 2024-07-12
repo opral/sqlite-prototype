@@ -1,8 +1,8 @@
 import { loadProject } from "./loadProject";
 
-const repo = openRepo();
-
-const project = await loadProject(repo);
+const file = fs.readFile("/my-cool-project.inlang");
+const project = await loadProject(file);
+const repo = await openRepo(file);
 
 repo.commit();
 
@@ -21,6 +21,7 @@ async function newProject() {
   `;
 
   await repo.file.create("/db.sqlite", sqlite.toArrayBuffer());
+  await repo.file.create("/settings.json", JSON.stringify({}));
 
   // create lix plugin
   await repo.file.create(
@@ -38,6 +39,7 @@ async function newProject() {
     `
       - triggerOn: "message"
       - if (message.locale === "fr")
+      - then
       ...
   `
   );

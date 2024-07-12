@@ -2,11 +2,11 @@ import { loadProject } from "./loadProject";
 
 const repo = await fromRemote("https://example.com/my-repo.lix");
 
-const csv = repo.file.select().where("path", "=", "project.csv").first();
+const csv = repo.file.select().where("path", "=", "financials.csv");
 
 const updated = update(csv);
 
-repo.file.update(updated).where("path", "=", "project.csv");
+repo.file.update(updated).where("path", "=", "financials.csv");
 
 repo.commit();
 
