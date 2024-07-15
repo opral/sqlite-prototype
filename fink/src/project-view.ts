@@ -56,6 +56,9 @@ export class ProjectView extends LitElement {
       variants.push(...mock.variants);
       // manual batching to avoid too many db operations
       if (bundles.length > 1000) {
+        const now = new Date().getTime()
+        console.time('Creating ' + bundles.length + ' Bundles/Messages/Variants ' + now)
+        
         // TODO make in one query
         await project.value!.bundle.insert.values(bundles).execute();
         await project.value?.db
@@ -67,6 +70,7 @@ export class ProjectView extends LitElement {
           .values(variants as any)
           .execute();
 
+          console.timeEnd('Creating ' + bundles.length + ' Bundles/Messages/Variants ' + now)
         bundles = [];
         messages = [];
         variants = [];
@@ -74,6 +78,9 @@ export class ProjectView extends LitElement {
     }
     // insert remaining bundles
     if (bundles.length > 0) {
+
+      const now = new Date().getTime()
+      console.time('Creating ' + bundles.length + ' Bundles/Messages/Variants ' + now)
       await project.value!.bundle.insert.values(bundles).execute();
       await project
         .value!.db.insertInto("message")
@@ -83,6 +90,7 @@ export class ProjectView extends LitElement {
         .insertInto("variant")
         .values(variants as any)
         .execute();
+          console.timeEnd('Creating ' + bundles.length + ' Bundles/Messages/Variants ' + now)
     }
     this.crudOperationExecuted++;
   }
