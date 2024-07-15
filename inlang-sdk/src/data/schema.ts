@@ -1,16 +1,47 @@
-import { JSONColumnType } from "kysely";
+import { Insertable, JSONColumnType, Selectable, Updateable } from "kysely";
 
 
 export type Database = {
-  bundle: Bundle;
-  message: Message;
-  variant: Variant;
+  bundle: BundleTable;
+  message: MessageTable;
+  variant: VariantTable;
+
+  lintReports: LintReport;
   // todo - move out of database
   settings: Settings;
 };
 
+
+export type MessageLintLevel = 'error' | 'warning' | 'off'
+
+
+/**
+ * The basis of a lint report (required to contruct a lint report union type)
+ */
+export type LintReport = {
+	ruleId: string,
+
+	target: {
+		messageBundleId: string,
+		messageId?: string,
+		variantId?: string,
+	},
+
+	level: MessageLintLevel,
+	body: string,
+
+	/**
+	 * The available fixes that can be automatically applied
+	 * Empty array = no automatic fixes
+	 */
+	fixes: LintFix[],
+}
+
+type LintFix = { key: string; title: string }
+
+
 // Bundles all languages of a message -
-export type Bundle = {
+type BundleTable = {
   id: string;
   // todo make alias relational
   alias: JSONColumnType<Record<string, string>>; // alias usually have a property "default"  that represents the message name like "welcome_message" or "login_button"
@@ -18,23 +49,35 @@ export type Bundle = {
   // messages: Message[]
 };
 
-export type Message = {
+type MessageTable = {
   id: string;
   // @relation to Bundle
-  bundleId: Bundle["id"];
+  bundleId: BundleTable["id"];
   locale: string;
   declarations: JSONColumnType<Declaration[]>; // JSON
   selectors: JSONColumnType<Expression[]>; // JSON
   // variants: Variant[]
 };
 
-export type Variant = {
+type VariantTable = {
   id: string;
   // @relation to Message
-  messageId: Message["id"];
-  match: string[];
-  pattern: Pattern; // JSON
+  messageId: MessageTable["id"];
+  match: JSONColumnType<string[]>;
+  pattern: JSONColumnType<Pattern>; // JSON
 };
+
+export type Bundle = Selectable<BundleTable>
+export type NewBundle = Insertable<BundleTable>
+export type UpdatedBundle = Updateable<BundleTable>
+
+export type Message = Selectable<MessageTable>
+export type NewMessage = Insertable<MessageTable>
+export type UpdatedMessage = Updateable<MessageTable>
+
+export type Variant = Selectable<VariantTable>
+export type NewVariant = Insertable<VariantTable>
+export type UpdatedVariant = Updateable<VariantTable>
 
 export type Pattern = Array<Text | Expression>;
 

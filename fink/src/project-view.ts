@@ -5,6 +5,7 @@ import { Task } from "@lit/task";
 import { createBundle } from "inlang-sdk"
 import "./message-bundle-component.mjs";
 import { repeat } from "lit/directives/repeat.js";
+import { NewBundle, NewMessage, NewVariant } from "../../inlang-sdk/src/data/schema";
 
 @customElement("project-view")
 export class ProjectView extends LitElement {
@@ -24,6 +25,7 @@ export class ProjectView extends LitElement {
       const bundles = await project.value?.bundle.select
         .limit(this.limitRendering)
         .execute();
+        
       return bundles;
     },
   });
@@ -31,8 +33,10 @@ export class ProjectView extends LitElement {
   numBundles = new Task(this, {
     args: () => [this.crudOperationExecuted],
     task: async () => {
+      console.time('counting bundles')
       const numBundles = await project.value!
         .sql`select count(*) as count from bundle`;
+        console.timeEnd('counting bundles')
       return numBundles[0].count;
     },
   });
@@ -75,7 +79,6 @@ export class ProjectView extends LitElement {
       // fs.writeFileSync(metapath, metadata);
     }
 
-    debugger
   }
 
   async loadDatabase() {
@@ -84,35 +87,56 @@ export class ProjectView extends LitElement {
 
   // TODO move logic to inlang-sdk (query engine)
   async createBundles() {
-    let bundles = [] as any;
-    let messages = [] as any;
-    let variants = [] as any;
+    debugger
+    
+    let bundles: NewBundle[] = [];
+    let messages: NewMessage[] = [];
+    let variants: NewVariant[] = [];
     for (let i = 0; i < this.numBundlesToGenerate; i++) {
       // TODO move id generation to inlang-sdk
       const sdkBundle = createBundle(['de-DE', 'en-US'], 3, 2, 2)
-      const dbBundle = sdkBundle as any
+      
       sdkBundle.messages.forEach(message => {
-        message.variants.forEach(variant => variants.push(variant))
-        const dbMessage = message as any;
-        delete dbMessage.variants
-        messages.push(dbMessage)
+        
+        message.variants.forEach(variant => variants.push({
+          id: variant.id,
+          messageId: message.id,
+          match: JSON.stringify(variant.match), 
+          pattern: JSON.stringify(variant.pattern)
+        }))
+        messages.push({
+          bundleId: message.bundleId,
+          id: message.id,
+          locale: message.locale,
+          declarations: JSON.stringify(message.declarations),
+          selectors: JSON.stringify(message.selectors)
+        })
       })
-      delete dbBundle.messages
-      bundles.push(dbBundle)
+      
+      bundles.push({
+        alias: JSON.stringify(sdkBundle.alias),
+        id: sdkBundle.id
+      })
       
       // manual batching to avoid too many db operations
-      if (bundles.length > 1000) {
+      if (bundles.length > 300) {
+        console.time('creating bundles')
         // TODO make in one query
         await project.value!.bundle.insert.values(bundles).execute();
+        console.timeEnd('creating bundles')
+
+        console.time('creating messages')
         await project.value?.db
           .insertInto("message")
           .values(messages as any)
           .execute();
+          console.timeEnd('creating messages')
+          console.time('creating variants')
         await project.value?.db
           .insertInto("variant")
           .values(variants as any)
           .execute();
-
+          console.timeEnd('creating variants')
         bundles = [];
         messages = [];
         variants = [];
@@ -120,16 +144,26 @@ export class ProjectView extends LitElement {
     }
     // insert remaining bundles
     if (bundles.length > 0) {
+      console.time('creating bundles')
       await project.value!.bundle.insert.values(bundles).execute();
+      console.timeEnd('creating bundles')
+
+      console.time('creating messages')
       await project
         .value!.db.insertInto("message")
         .values(messages as any)
         .execute();
+        console.timeEnd('creating messages')
+
+        console.time('creating variants')
       await project.value?.db
         .insertInto("variant")
         .values(variants as any)
         .execute();
+        console.timeEnd('creating variants')
     }
+    debugger
+    
     this.crudOperationExecuted++;
   }
 
@@ -165,6 +199,7 @@ export class ProjectView extends LitElement {
       </div>
       <hr />
       <h2>Bundles</h2>
+      
       ${this.loadBundlesTask.value === undefined ||
       this.loadBundlesTask.value.length === 0
         ? html`<p>No bundles exist yet</p>`
