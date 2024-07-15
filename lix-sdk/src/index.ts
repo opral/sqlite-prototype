@@ -1,11 +1,3 @@
-// packs a lix repository
-export function pack(fs: any) {
-  throw new Error("Not implemented");
-}
-
-/**
- * unpacks a lix repository
- */
-export function unpack(repo: any) {
-  throw new Error("Not implemented");
-}
+export * from "./loadLixArchive";
+export * from "./newLixArchive";
+export { File } from "./schema";
