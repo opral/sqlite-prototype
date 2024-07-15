@@ -10,7 +10,7 @@ export async function newProject(): Promise<Blob> {
   const opfsRoot = await navigator.storage.getDirectory();
   const interimDbName = `interim_${Math.random()}_for_new_project_creation.inlang`;
   try {
-    const { sql } = new SQLocal(interimDbName);
+    const { sql, destroy } = new SQLocal(interimDbName);
     await sql`
 
     CREATE TABLE Bundle (
@@ -38,9 +38,11 @@ export async function newProject(): Promise<Blob> {
     // load db into memory
     const buffer = await file.arrayBuffer();
     // return a blob of the db
+    destroy()
     return new Blob([buffer]);
   } finally {
     // in any case remove the interim db
     await opfsRoot.removeEntry(interimDbName);
+    
   }
 }
