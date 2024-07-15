@@ -1,8 +1,22 @@
 import { Kysely, ParseJSONResultsPlugin } from "kysely";
 import { importProjectIntoOPFS } from "./importProject";
 import { SQLocalKysely } from "sqlocal/kysely";
-import { Database } from "./schema";
+import { Database } from "./data/schema";
 import { jsonArrayFrom } from "kysely/helpers/sqlite";
+
+class SQLocalKyselyWithRaw extends SQLocalKysely {
+  rawSql = async <T extends Record<string, any>[]>(
+		rawSql: string
+	) => {
+		
+		const { rows, columns } = await this.exec(
+			rawSql,
+			[],
+			'all'
+		);
+		return this.convertRowsToObjects(rows, columns) as T;
+	};
+}
 
 /**
  *
@@ -10,8 +24,10 @@ import { jsonArrayFrom } from "kysely/helpers/sqlite";
 export async function loadProject(blob: Blob) {
   // naively overwriting the existing db
   // todo - use uuids to store projects and avoid conflicts
-  await importProjectIntoOPFS({ blob, path: "test.inlang" });
-  const { dialect, sql } = new SQLocalKysely("test.inlang");
+  await importProjectIntoOPFS({ blob, path: "test2.inlang" });
+  const sqliteDb = new SQLocalKyselyWithRaw("test2.inlang");
+  const { dialect, sql, rawSql } = sqliteDb
+  
   const db = new Kysely<Database>({
     dialect,
     plugins: [new ParseJSONResultsPlugin()],
@@ -20,6 +36,7 @@ export async function loadProject(blob: Blob) {
   return {
     db,
     sql,
+    rawSql,
     bundle: {
       select: selectAllWithNestedMessages(db),
       insert: db.insertInto("bundle"),
@@ -27,6 +44,7 @@ export async function loadProject(blob: Blob) {
     settings: db.selectFrom("settings"),
   };
 }
+
 
 /**
  * Select all bundles with nested messages and variants.
