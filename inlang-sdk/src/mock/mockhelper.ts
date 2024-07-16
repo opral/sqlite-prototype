@@ -1,4 +1,4 @@
-import { Declaration, Expression, Pattern } from "../data/schema";
+import { Declaration, Expression, LintReport, Pattern } from "../data/schema";
 import { SDKBundle, SDKMessage } from "../data/sdkTypes";
 import {generateBundleId, generateUUID } from '../helper/index'
 import { inputNames, inputsWithSelectors, simpleInputs, translations } from "./mockdata"
@@ -143,4 +143,58 @@ function createPattern(inputs: Declaration[], languageTags: string[]) {
   }
 
   return patterns;
+}
+
+export function mockReports(messageBundle: ReturnType<typeof createBundle>) {
+
+  const lintReports: LintReport[] = []
+  lintReports.push({
+    ruleId: "uniqueAlias",
+    target: {
+      messageBundleId: messageBundle.id,
+      messageId: undefined,
+      variantId: undefined
+    },
+    level: "error",
+    body: "This Rule triggers because the alias is not unique",
+    fixes: [{
+      key: 'toUpper',
+      title: 'Regenerate the alias'
+    }]
+  })
+
+  for (const message of messageBundle.messages) {
+    lintReports.push({
+      ruleId: "outdatedTranslation",
+      target: {
+        messageBundleId: messageBundle.id,
+        messageId: message.id,
+        variantId: undefined
+      },
+      level: "error",
+      body: "This Messsage is outdated",
+      fixes: [{
+        key: 'toUpper',
+        title: 'Convert to upper case'
+      }]
+    })
+
+    for (const variant of message.variants) {
+      lintReports.push({
+          ruleId: "opralLowerCase",
+          target: {
+            messageBundleId: messageBundle.id,
+            messageId: message.id,
+            variantId: variant.id,
+          },
+          level: "error",
+          body: "This Rule triggers because the text contains a lowerCase Opral",
+          fixes: [{
+            key: 'toUpper',
+            title: 'Convert to upper case'
+          }]
+        })
+    }
+  }
+  return lintReports
 }

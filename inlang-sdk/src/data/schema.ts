@@ -6,7 +6,7 @@ export type Database = {
   message: MessageTable;
   variant: VariantTable;
 
-  lintReports: LintReport;
+  LintReport: LintReport;
   // todo - move out of database
   settings: Settings;
 };
@@ -14,6 +14,8 @@ export type Database = {
 
 export type MessageLintLevel = 'error' | 'warning' | 'off'
 
+
+type LintFix = { key: string; title: string }
 
 /**
  * The basis of a lint report (required to contruct a lint report union type)
@@ -37,14 +39,18 @@ export type LintReport = {
 	fixes: LintFix[],
 }
 
-type LintFix = { key: string; title: string }
 
+
+
+type AliasMap = {
+  [key: string]: string;
+};
 
 // Bundles all languages of a message -
 type BundleTable = {
   id: string;
   // todo make alias relational
-  alias: JSONColumnType<Record<string, string>>; // alias usually have a property "default"  that represents the message name like "welcome_message" or "login_button"
+  alias: JSONColumnType<AliasMap>; // alias usually have a property "default"  that represents the message name like "welcome_message" or "login_button"
   // messages[] @relation
   // messages: Message[]
 };

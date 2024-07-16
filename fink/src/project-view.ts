@@ -2,14 +2,17 @@ import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { project } from "./state";
 import { Task } from "@lit/task";
-import { createBundle } from "inlang-sdk"
+import { createBundle, mockReports } from "inlang-sdk"
 import "./message-bundle-component.mjs";
 import { repeat } from "lit/directives/repeat.js";
-import { NewBundle, NewMessage, NewVariant } from "../../inlang-sdk/src/data/schema";
+import { LintReport, NewBundle, NewMessage, NewVariant } from "../../inlang-sdk/src/data/schema";
 import { Kysely, RawBuilder, sql } from 'kysely'
 
 function json<T>(value: T): RawBuilder<T> {
-  return sql`jsonb(${JSON.stringify(value)})`
+  // NOTE we cant use jsonb for now since kisley 
+  // - couldn't find out how to return json instead of bytes in a selectFrom(...).select statment 
+  //  return sql`jsonb(${JSON.stringify(value)})`
+  return sql`json(${JSON.stringify(value)})`
 }
 
 @customElement("project-view")
@@ -32,6 +35,7 @@ export class ProjectView extends LitElement {
         .limit(this.limitRendering)
         .execute();
         console.timeEnd(`selecting ${this.limitRendering} bundles`) 
+      
       return bundles;
     },
   });
@@ -97,11 +101,19 @@ export class ProjectView extends LitElement {
     let bundles: NewBundle[] = [];
     let messages: NewMessage[] = [];
     let variants: NewVariant[] = [];
+    let reports: LintReport[] = []
 
     await project.value!.db.transaction().execute(async (tsx) => {
       for (let i = 0; i < this.numBundlesToGenerate; i++) {
         // TODO move id generation to inlang-sdk
-        const sdkBundle = createBundle(['de-DE', 'en-US'], 3, 2, 2)
+        const sdkBundle = createBundle(['de-DE', 'en-US'], 0, 0, 0)
+
+        mockReports(sdkBundle).forEach(report => {
+          const reportToAdd:any = report
+          reportToAdd.fixes = json(reportToAdd.fixes)
+          reportToAdd.target = json(reportToAdd.target)
+          reports.push(reportToAdd)
+        });
         
         sdkBundle.messages.forEach(message => {
           
@@ -119,7 +131,7 @@ export class ProjectView extends LitElement {
             selectors: json(message.selectors)
           } as any)
         })
-        
+
         bundles.push({
           alias: json(sdkBundle.alias),
           id: sdkBundle.id
@@ -141,11 +153,17 @@ export class ProjectView extends LitElement {
             .insertInto("variant")
             .values(variants as any)
             .execute();
+
+          await tsx
+            .insertInto("LintReport")
+            .values(reports as any)
+            .execute();
   
           console.timeEnd('Creating ' + bundles.length + ' Bundles/Messages/Variants ' + now)
           bundles = [];
           messages = [];
           variants = [];
+          reports = [];
         }
       }
       // insert remaining bundles
@@ -164,11 +182,13 @@ export class ProjectView extends LitElement {
           .insertInto("variant")
           .values(variants as any)
           .execute();
+          await tsx
+          .insertInto("LintReport")
+          .values(reports as any)
+          .execute();
         console.timeEnd('Creating ' + bundles.length + ' Bundles/Messages/Variants ' + now)
       }
-    })
-
-    
+    })   
     
     this.crudOperationExecuted++;
   }

@@ -4,6 +4,8 @@ import { SQLocalKysely } from "sqlocal/kysely";
 import { Database } from "./data/schema";
 import { jsonArrayFrom } from "kysely/helpers/sqlite";
 
+// extend the SQLocalKysely class to expose a rawSql function
+// needed for non parametrized queries
 class SQLocalKyselyWithRaw extends SQLocalKysely {
   rawSql = async <T extends Record<string, any>[]>(
 		rawSql: string
@@ -27,6 +29,16 @@ export async function loadProject(blob: Blob) {
   await importProjectIntoOPFS({ blob, path: "test2.inlang" });
   const sqliteDb = new SQLocalKyselyWithRaw("test2.inlang");
   const { dialect, sql, rawSql } = sqliteDb
+
+  // create temp table for lint reports
+  await rawSql(`
+  CREATE TEMP TABLE LintReport (
+    ruleId TEXT, 
+    target TEXT NOT NULL,
+    level TEXT NOT NULL,
+    body TEXT NOT NULL,
+    fixes TEXT
+  )`)
   
   const db = new Kysely<Database>({
     dialect,
@@ -52,6 +64,7 @@ export async function loadProject(blob: Blob) {
  * >> { bundle, messages: [{ message, variants: [{ variant }] }] }
  */
 const selectAllWithNestedMessages = (db: Kysely<Database>) => {
+
   return db.selectFrom("bundle").select((eb) => [
     // select all columns from bundle
     "id",
