@@ -6,6 +6,11 @@ import { createBundle } from "inlang-sdk"
 import "./message-bundle-component.mjs";
 import { repeat } from "lit/directives/repeat.js";
 import { NewBundle, NewMessage, NewVariant } from "../../inlang-sdk/src/data/schema";
+import { Kysely, RawBuilder, sql } from 'kysely'
+
+function json<T>(value: T): RawBuilder<T> {
+  return sql`jsonb(${JSON.stringify(value)})`
+}
 
 @customElement("project-view")
 export class ProjectView extends LitElement {
@@ -22,10 +27,11 @@ export class ProjectView extends LitElement {
   loadBundlesTask = new Task(this, {
     args: () => [this.crudOperationExecuted, this.limitRendering],
     task: async () => {
+      console.time(`selecting ${this.limitRendering} bundles`)
       const bundles = await project.value?.bundle.select
         .limit(this.limitRendering)
         .execute();
-        
+        console.timeEnd(`selecting ${this.limitRendering} bundles`) 
       return bundles;
     },
   });
@@ -87,82 +93,82 @@ export class ProjectView extends LitElement {
 
   // TODO move logic to inlang-sdk (query engine)
   async createBundles() {
-    debugger
     
     let bundles: NewBundle[] = [];
     let messages: NewMessage[] = [];
     let variants: NewVariant[] = [];
-    for (let i = 0; i < this.numBundlesToGenerate; i++) {
-      // TODO move id generation to inlang-sdk
-      const sdkBundle = createBundle(['de-DE', 'en-US'], 3, 2, 2)
-      
-      sdkBundle.messages.forEach(message => {
-        
-        message.variants.forEach(variant => variants.push({
-          id: variant.id,
-          messageId: message.id,
-          match: JSON.stringify(variant.match), 
-          pattern: JSON.stringify(variant.pattern)
-        }))
-        messages.push({
-          bundleId: message.bundleId,
-          id: message.id,
-          locale: message.locale,
-          declarations: JSON.stringify(message.declarations),
-          selectors: JSON.stringify(message.selectors)
-        })
-      })
-      
-      bundles.push({
-        alias: JSON.stringify(sdkBundle.alias),
-        id: sdkBundle.id
-      })
-      
-      // manual batching to avoid too many db operations
-      if (bundles.length > 300) {
-        console.time('creating bundles')
-        // TODO make in one query
-        await project.value!.bundle.insert.values(bundles).execute();
-        console.timeEnd('creating bundles')
 
-        console.time('creating messages')
-        await project.value?.db
+    await project.value!.db.transaction().execute(async (tsx) => {
+      for (let i = 0; i < this.numBundlesToGenerate; i++) {
+        // TODO move id generation to inlang-sdk
+        const sdkBundle = createBundle(['de-DE', 'en-US'], 3, 2, 2)
+        
+        sdkBundle.messages.forEach(message => {
+          
+          message.variants.forEach(variant => variants.push({
+            id: variant.id,
+            messageId: message.id,
+            match: json(variant.match), 
+            pattern: json(variant.pattern)
+          } as any))
+          messages.push({
+            bundleId: message.bundleId,
+            id: message.id,
+            locale: message.locale,
+            declarations: json(message.declarations),
+            selectors: json(message.selectors)
+          } as any)
+        })
+        
+        bundles.push({
+          alias: json(sdkBundle.alias),
+          id: sdkBundle.id
+        } as any)
+        
+        // manual batching to avoid too many db operations
+        if (bundles.length > 300) {
+          console.log('Bundles created: ' + i)
+          const now = new Date().getTime()
+          console.time('Creating ' + bundles.length + ' Bundles/Messages/Variants ' + now)
+  
+          // TODO make in one query
+          await tsx.insertInto("bundle").values(bundles).execute();
+          await tsx
+            .insertInto("message")
+            .values(messages as any)
+            .execute();
+          await tsx
+            .insertInto("variant")
+            .values(variants as any)
+            .execute();
+  
+          console.timeEnd('Creating ' + bundles.length + ' Bundles/Messages/Variants ' + now)
+          bundles = [];
+          messages = [];
+          variants = [];
+        }
+      }
+      // insert remaining bundles
+      if (bundles.length > 0) {
+  
+        const now = new Date().getTime()
+        console.time('Creating ' + bundles.length + ' Bundles/Messages/Variants ' + now)
+        await tsx
+            .insertInto("bundle").values(bundles).execute();
+        await tsx
           .insertInto("message")
           .values(messages as any)
           .execute();
-          console.timeEnd('creating messages')
-          console.time('creating variants')
-        await project.value?.db
+        
+        await tsx
           .insertInto("variant")
           .values(variants as any)
           .execute();
-          console.timeEnd('creating variants')
-        bundles = [];
-        messages = [];
-        variants = [];
+        console.timeEnd('Creating ' + bundles.length + ' Bundles/Messages/Variants ' + now)
       }
-    }
-    // insert remaining bundles
-    if (bundles.length > 0) {
-      console.time('creating bundles')
-      await project.value!.bundle.insert.values(bundles).execute();
-      console.timeEnd('creating bundles')
+    })
 
-      console.time('creating messages')
-      await project
-        .value!.db.insertInto("message")
-        .values(messages as any)
-        .execute();
-        console.timeEnd('creating messages')
-
-        console.time('creating variants')
-      await project.value?.db
-        .insertInto("variant")
-        .values(variants as any)
-        .execute();
-        console.timeEnd('creating variants')
-    }
-    debugger
+    
     
     this.crudOperationExecuted++;
   }

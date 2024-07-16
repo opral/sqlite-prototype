@@ -10,7 +10,7 @@ export async function newProject(): Promise<Blob> {
   const opfsRoot = await navigator.storage.getDirectory();
   const interimDbName = `interim_${Math.random()}_for_new_project_creation.inlang`;
   try {
-    const { sql } = new SQLocal(interimDbName);
+    const { sql, destroy } = new SQLocal(interimDbName);
     await sql`
 
     CREATE TABLE Bundle (
@@ -26,21 +26,29 @@ export async function newProject(): Promise<Blob> {
       selectors TEXT NOT NULL
     );
 
+    CREATE INDEX idx_message_bundleId ON Message (bundleId);
+
     CREATE TABLE Variant (
       id TEXT PRIMARY KEY, 
       messageId TEXT NOT NULL,
       match TEXT NOT NULL,
       pattern TEXT NOT NULL
     );
+
+    CREATE INDEX idx_variant_messageId ON Variant (messageId);
       `;
     const fileHandle = await opfsRoot.getFileHandle(interimDbName);
     const file = await fileHandle.getFile();
     // load db into memory
     const buffer = await file.arrayBuffer();
     // return a blob of the db
+    
+    await destroy()
     return new Blob([buffer]);
   } finally {
     // in any case remove the interim db
     await opfsRoot.removeEntry(interimDbName);
+    
+    
   }
 }
