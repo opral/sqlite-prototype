@@ -5,7 +5,7 @@
     "drizzle-orm": "^0.31.2",
     "human-id": "^4.1.1",
     "kysely": "^0.27.4",
-    "sqlocal": "^0.9.0",
+    "sqlocal": "^0.10.1",
     "uuid": "^10.0.0"
   },
   "type": "module",
