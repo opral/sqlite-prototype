@@ -26,23 +26,29 @@ export async function newProject(): Promise<Blob> {
       selectors TEXT NOT NULL
     );
 
+    CREATE INDEX idx_message_bundleId ON Message (bundleId);
+
     CREATE TABLE Variant (
       id TEXT PRIMARY KEY, 
       messageId TEXT NOT NULL,
       match TEXT NOT NULL,
       pattern TEXT NOT NULL
     );
+
+    CREATE INDEX idx_variant_messageId ON Variant (messageId);
       `;
     const fileHandle = await opfsRoot.getFileHandle(interimDbName);
     const file = await fileHandle.getFile();
     // load db into memory
     const buffer = await file.arrayBuffer();
     // return a blob of the db
-    destroy()
+    
+    await destroy()
     return new Blob([buffer]);
   } finally {
     // in any case remove the interim db
     await opfsRoot.removeEntry(interimDbName);
+    
     
   }
 }
