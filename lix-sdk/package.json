@@ -1,0 +1,18 @@
+{
+  "name": "lix-sdk",
+  "dependencies": {
+    "@sqlite.org/sqlite-wasm": "^3.46.0-build2",
+    "drizzle-orm": "^0.31.2",
+    "human-id": "^4.1.1",
+    "kysely": "^0.27.4",
+    "sqlocal": "^0.10.1",
+    "uuid": "^10.0.0"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@types/uuid": "^10.0.0"
+  }
+}
