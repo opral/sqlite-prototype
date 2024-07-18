@@ -1,0 +1,19 @@
+{
+  "name": "csv-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@lit-labs/preact-signals": "^1.0.2",
+    "@lit/task": "^1.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vite": "^5.3.1"
+  }
+}

@@ -3,6 +3,7 @@
   "workspaces": [
     "fink",
     "inlang-sdk",
+    "csv-app",
     "lix-sdk"
   ]
 }
