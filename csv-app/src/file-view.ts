@@ -1,47 +1,37 @@
 import { LitElement, html } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { SignalWatcher } from "@lit-labs/preact-signals";
 import { lix, openFile } from "./state";
-import { Task } from "@lit/task";
+import { poll } from "./reactivity";
 
 @customElement("file-view")
 export class FileView extends SignalWatcher(LitElement) {
-  loadFileTreeTask = new Task(this, {
-    args: () => [],
-    task: async () => {
-      const result = await lix.value?.db
-        .selectFrom("file")
-        .select(["id", "path"])
-        .execute();
-      return result ?? [];
-    },
-  });
+  @state()
+  files: any = true;
+
+  connectedCallback() {
+    poll(
+      async () => {
+        const result = await lix.value?.db
+          .selectFrom("file")
+          .select(["id", "path"])
+          .execute();
+        console.log({ result });
+        return result ?? [];
+      },
+      (files) => {
+        console.log("callback", { files });
+        this.files = ["Sss"];
+        this.requestUpdate();
+      }
+    );
+  }
 
   render() {
     return html`
       <h2>Files</h2>
-      ${this.loadFileTreeTask.render({
-        loading: () => html`<p>Loading...</p>`,
-        error: (error) => html`<p>Error: ${error}</p>`,
-        complete: (files) =>
-          files.length === 0
-            ? html`<p>No files</p>`
-            : html`<ul>
-                ${files.map(
-                  (file) =>
-                    html`<li>
-                      <a
-                        style="${openFile.value === file.path
-                          ? "font-weight: 800"
-                          : ""}"
-                        @click=${() => (openFile.value = file.path)}
-                      >
-                        ${file.path}</a
-                      >
-                    </li>`
-                )}
-              </ul>`,
-      })}
+      <p>${this.files}</p>
+      <p>${this.files.length === 0 ? "No files" : ""}</p>
     `;
   }
 }
