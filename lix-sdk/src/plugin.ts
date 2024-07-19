@@ -4,6 +4,10 @@ import type { LixFile } from "./schema";
 export type LixPlugin = {
   key: string;
   glob: string;
+  diff?: {
+    // TODO
+    cell: () => Promise<any>;
+  };
   onFileChange: (args: {
     old: LixFile["blob"];
     neu: LixFile["blob"];
