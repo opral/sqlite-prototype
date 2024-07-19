@@ -1,11 +1,11 @@
-import { LitElement, html } from "lit";
+import { html, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { SignalWatcher } from "@lit-labs/preact-signals";
 import { lix, openFile } from "./state";
 import { poll } from "./reactivity";
+import { BaseElement } from "./baseElement";
 
 @customElement("file-view")
-export class FileView extends SignalWatcher(LitElement) {
+export class FileView extends BaseElement {
   @state()
   files: any = [];
 
@@ -13,13 +13,28 @@ export class FileView extends SignalWatcher(LitElement) {
     super.connectedCallback();
     poll(
       async () => {
-        const result = await lix.value?.db
+        const result: any = await lix.value?.db
           .selectFrom("file")
           .select(["id", "path"])
           .execute();
+
+        if (result && result.length > 0) {
+          for (const file of result) {
+            const changes = await lix.value?.db
+              .selectFrom("change")
+              .select("id")
+              .where("file_id", "=", file.id)
+              .where("commit_id", "is not", "null")
+              .execute();
+            file.hasUncommittedChanges = changes!.length > 0 ? true : false;
+          }
+        }
+
         return result ?? [];
       },
-      (files) => (this.files = files)
+      (files) => {
+        this.files = files;
+      }
     );
   }
 
@@ -37,9 +52,22 @@ export class FileView extends SignalWatcher(LitElement) {
                     : ""}"
                 >
                   <div style="display: flex; justify-content: space-between;">
-                    <p @click=${() => (openFile.value = file.path)}>
-                      ${file.path}
-                    </p>
+                    <div class="flex items-center gap-2">
+                      <p @click=${() => (openFile.value = file.path)}>
+                        ${file.path}
+                      </p>
+                      ${file.hasUncommittedChanges
+                        ? html`
+                            <div
+                              class="w-2 h-2 bg-orange-500 rounded-3xl"
+                            ></div>
+                            <p class="text-orange-500 text-sm">
+                              uncommitted changes
+                            </p>
+                          `
+                        : nothing}
+                    </div>
+
                     <div style="display: flex; gap: 1rem">
                       <button
                         @click=${async () => {

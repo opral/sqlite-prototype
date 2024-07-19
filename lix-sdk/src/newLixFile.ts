@@ -18,26 +18,32 @@ export async function newLixFile(): Promise<Blob> {
       path TEXT NOT NULL,
       blob BLOB NOT NULL
     ) strict;
-      `;
+  
+    CREATE TABLE Change (
+      id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      file_id TEXT NOT NULL,
+      plugin_key TEXT NOT NULL,
+      value TEXT NOT NULL,
+      meta TEXT,
+      commit_id TEXT,
 
-    await sql`
-      CREATE TABLE Change (
-        id TEXT NOT NULL,
-        type TEXT NOT NULL,
-        file_id TEXT NOT NULL,
-        plugin_key TEXT NOT NULL,
-        value TEXT NOT NULL,
-        meta TEXT,
+      /*
+        uniqueness must be enforced for
+          - the primitive (id, type)
+          - files (file_id) as multiple files can exist
+          - plugins (plugin_key) as multiple plugins can exist
+          - that could theoretically track changes in parallel
+      */
+      UNIQUE(id, type, file_id, plugin_key)
+    ) strict;
 
-        /*
-          uniqueness must be enforced for
-            - the primitive (id, type)
-            - files (file_id) as multiple files can exist
-            - plugins (plugin_key) as multiple plugins can exist
-            - that could theoretically track changes in parallel
-        */
-        UNIQUE(id, type, file_id, plugin_key)
-      ) strict;
+    CREATE TABLE Peter (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      description TEXT NOT NULL,
+      zoned_date_time TEXT NOT NULL
+    ) strict;
     `;
 
     const fileHandle = await opfsRoot.getFileHandle(interimDbName);

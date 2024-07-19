@@ -85,7 +85,7 @@ export class CsvView extends BaseElement {
                             <input
                               class=${classMap({
                                 "border-2": hasChanges,
-                                "border-green-500": hasChanges,
+                                "border-orange-500": hasChanges,
                               })}
                               value=${row[field]}
                               @input=${(event: any) => {

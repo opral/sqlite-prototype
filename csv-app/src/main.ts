@@ -60,7 +60,7 @@ export class App extends BaseElement {
         : html`<p>No lix loaded</p>`}
       <hr />
       <h2>Meta</h2>
-      <p>Number of outstanding changes: ${this.numOustandingChanges}</p>
+      <p>Uncommitted changes: ${this.numOustandingChanges}</p>
       <hr />
       ${openFile.value ? html`<csv-view></csv-view>` : nothing}
     `;

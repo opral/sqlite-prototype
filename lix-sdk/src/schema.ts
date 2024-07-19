@@ -12,9 +12,25 @@ export type LixFile = {
   blob: ArrayBuffer;
 };
 
+export type Commit = {
+  id: string; // uuid
+  // todo:
+  //  multiple users can commit one change
+  //  think of real-time collaboration scenarios
+  user_id: string; // uuid
+  description: string;
+  zoned_date_time: string;
+  // @relation changes: Change[]
+};
+
 export type Change = {
   id: string;
   file_id: LixFile["id"];
+  /**
+   * If no commit id exists on a change,
+   * the change is considered uncommitted.
+   */
+  commit_id?: Commit["id"];
   /**
    * The plugin key that contributed the change.
    *
