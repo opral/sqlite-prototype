@@ -1,15 +1,16 @@
-import { LitElement, html } from "lit";
+import { html, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { SignalWatcher, watch } from "@lit-labs/preact-signals";
 import { lix, openFile } from "./state";
 import { Task } from "@lit/task";
 import Papa from "papaparse";
+import { classMap } from "lit/directives/class-map.js";
 import { repeat } from "lit/directives/repeat.js";
 import { poll } from "./reactivity";
 import { Change } from "../../lix-sdk/src/schema";
+import { BaseElement } from "./baseElement";
 
 @customElement("csv-view")
-export class FileView extends SignalWatcher(LitElement) {
+export class CsvView extends BaseElement {
   parseCsvTask = new Task(this, {
     args: () => [],
     task: async () => {
@@ -75,25 +76,48 @@ export class FileView extends SignalWatcher(LitElement) {
                     <tr>
                       ${csv.meta.fields!.map((field, columnIndex) => {
                         const cellId = `${rowIndex}-${columnIndex}`;
-                        return html`<td style="padding: 1rem">
-                          <input
-                          style=""
-                            value=${row[field]}
-                            @input=${(event: any) => {
-                              // @ts-ignore
-                              csv.data[csv.data.indexOf(row)][field] =
-                                event.target.value;
-                              lix.value?.db
-                                .updateTable("file")
-                                .set({
-                                  blob: new TextEncoder().encode(
-                                    Papa.unparse(csv.data)
-                                  ),
-                                })
-                                .where("path", "=", openFile.value!)
-                                .execute();
-                            }}
-                          />
+                        const changes = this.changes.filter(
+                          (change) => (change.data as any).cellId === cellId
+                        );
+                        const hasChanges = changes.length > 0;
+                        return html`<td class="p-2">
+                          <div class="flex">
+                            <input
+                              class=${classMap({
+                                "border-2": hasChanges,
+                                "border-green-500": hasChanges,
+                              })}
+                              value=${row[field]}
+                              @input=${(event: any) => {
+                                // @ts-ignore
+                                csv.data[csv.data.indexOf(row)][field] =
+                                  event.target.value;
+                                lix.value?.db
+                                  .updateTable("file")
+                                  .set({
+                                    blob: new TextEncoder().encode(
+                                      Papa.unparse(csv.data)
+                                    ),
+                                  })
+                                  .where("path", "=", openFile.value!)
+                                  .execute();
+                              }}
+                            />
+                            <sl-dropdown>
+                              <sl-button
+                                size="sm"
+                                caret
+                                slot="trigger"
+                              ></sl-button>
+                              <div class="bg-white p-4">
+                                ${hasChanges === false
+                                  ? html`<p>No change history</p>`
+                                  : changes.map((change) => {
+                                      return html`<p>${change.data.value}</p>`;
+                                    })}
+                              </div>
+                            </sl-dropdown>
+                          </div>
                         </td>`;
                       })}
                     </tr>

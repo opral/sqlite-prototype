@@ -9,6 +9,7 @@ import "./csv-view";
 import plugin from "./csv-plugin.js?raw";
 import { poll } from "./reactivity";
 import { BaseElement } from "./baseElement";
+import "@shoelace-style/shoelace";
 
 const lixOPFSPath = "temporary.lix";
 
