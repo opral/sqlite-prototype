@@ -6,6 +6,8 @@ import { newLixFile, openLixFromOPFS } from "lix-sdk";
 import { lix, openFile } from "./state";
 import "./file-view";
 import "./csv-view";
+// @ts-expect-error - no types
+import plugin from "./csv-plugin?raw";
 
 const lixOPFSPath = "temporary.lix";
 
@@ -55,7 +57,7 @@ export class InlangFileImport extends LitElement {
       .values({
         id: (Math.random() * 100).toFixed(),
         path: file.name,
-        data: await file.arrayBuffer(),
+        blob: await file.arrayBuffer(),
       })
       .execute();
   }
@@ -100,6 +102,14 @@ export class CreateProject extends LitElement {
     const file = await newLixFile();
     await saveInOPFS({ blob: file, path: lixOPFSPath });
     lix.value = await openLixFromOPFS(lixOPFSPath);
+    await lix.value.db
+      .insertInto("file")
+      .values({
+        id: "in280ns08n08n2",
+        path: "lix/plugin/csv.js",
+        blob: new TextEncoder().encode(plugin),
+      })
+      .execute();
   }
 
   render() {

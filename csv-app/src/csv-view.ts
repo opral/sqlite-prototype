@@ -13,11 +13,11 @@ export class FileView extends SignalWatcher(LitElement) {
     task: async () => {
       const result = await lix.value?.db
         .selectFrom("file")
-        .select("data")
+        .select("blob")
         .where("path", "=", openFile.value!)
         .executeTakeFirstOrThrow();
       const decoder = new TextDecoder();
-      const str = decoder.decode(result!.data);
+      const str = decoder.decode(result!.blob);
       return Papa.parse(str, { header: true });
     },
   });
@@ -46,21 +46,21 @@ export class FileView extends SignalWatcher(LitElement) {
                 ${repeat(
                   csv.data,
                   (row) => row,
-                  (row) => html`
+                  (row: any) => html`
                     <tr>
                       ${csv.meta.fields!.map(
                         (field) =>
                           html`<td style="padding: 1rem">
                             <input
                               value=${row[field]}
-                              @input=${(event) => {
-                                console.log({ path: openFile.value });
+                              @input=${(event: any) => {
+                                // @ts-ignore
                                 csv.data[csv.data.indexOf(row)][field] =
                                   event.target.value;
                                 lix.value?.db
                                   .updateTable("file")
                                   .set({
-                                    data: new TextEncoder().encode(
+                                    blob: new TextEncoder().encode(
                                       Papa.unparse(csv.data)
                                     ),
                                   })

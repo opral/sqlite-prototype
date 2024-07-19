@@ -16,7 +16,7 @@ export async function newLixFile(): Promise<Blob> {
     CREATE TABLE File (
       id TEXT PRIMARY KEY,
       path TEXT NOT NULL,
-      data BLOB NOT NULL
+      blob BLOB NOT NULL
     ) strict;
       `;
 

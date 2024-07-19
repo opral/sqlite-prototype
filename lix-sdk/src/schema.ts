@@ -5,5 +5,5 @@ export type Database = {
 export type File = {
   id: string;
   path: string;
-  data: ArrayBuffer;
+  blob: ArrayBuffer;
 };

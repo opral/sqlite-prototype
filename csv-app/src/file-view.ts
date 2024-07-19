@@ -45,10 +45,10 @@ export class FileView extends SignalWatcher(LitElement) {
                         @click=${async () => {
                           const result = await lix.value?.db
                             .selectFrom("file")
-                            .select("data")
+                            .select("blob")
                             .where("path", "=", file.path)
                             .executeTakeFirstOrThrow();
-                          const blob = new Blob([result!.data]);
+                          const blob = new Blob([result!.blob]);
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement("a");
                           a.href = url;
