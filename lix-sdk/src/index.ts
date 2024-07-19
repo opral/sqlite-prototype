@@ -1,3 +1,3 @@
 export { openLixFromOPFS } from "./openLixFile";
 export { newLixFile } from "./newLixFile";
-export type { Plugin } from "./plugin";
+export type { LixPlugin } from "./plugin";

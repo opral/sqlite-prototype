@@ -1,18 +1,19 @@
-import { LitElement, html, nothing } from "lit";
-import { customElement } from "lit/decorators.js";
+import { LitElement, html, nothing, css } from "lit";
+import { customElement, state } from "lit/decorators.js";
 import { Ref, createRef, ref } from "lit/directives/ref.js";
-import { SignalWatcher } from "@lit-labs/preact-signals";
 import { newLixFile, openLixFromOPFS } from "lix-sdk";
 import { lix, openFile } from "./state";
 import "./file-view";
 import "./csv-view";
 // @ts-expect-error - no types
 import plugin from "./csv-plugin.js?raw";
+import { poll } from "./reactivity";
+import { BaseElement } from "./baseElement";
 
 const lixOPFSPath = "temporary.lix";
 
 @customElement("csv-app")
-export class App extends SignalWatcher(LitElement) {
+export class App extends BaseElement {
   constructor() {
     super();
     if (lix.value === undefined) {
@@ -27,7 +28,21 @@ export class App extends SignalWatcher(LitElement) {
         }
       });
     }
+    poll(
+      () => {
+        return lix.value?.db
+          .selectFrom("change")
+          .select(({ fn }) => [fn.count<number>("id").as("count")])
+          .executeTakeFirst();
+      },
+      (value) => {
+        if (value) this.numOustandingChanges = value?.count;
+      }
+    );
   }
+
+  @state()
+  numOustandingChanges = 0;
 
   render() {
     return html`
@@ -44,6 +59,7 @@ export class App extends SignalWatcher(LitElement) {
         : html`<p>No lix loaded</p>`}
       <hr />
       <h2>Meta</h2>
+      <p>Number of outstanding changes: ${this.numOustandingChanges}</p>
       <hr />
       ${openFile.value ? html`<csv-view></csv-view>` : nothing}
     `;
@@ -51,7 +67,7 @@ export class App extends SignalWatcher(LitElement) {
 }
 
 @customElement("file-importer")
-export class InlangFileImport extends LitElement {
+export class InlangFileImport extends BaseElement {
   async handleFileSelection(event: any) {
     const file: File = event.target.files[0];
     await lix.value?.db
@@ -86,7 +102,7 @@ export class InlangFileImport extends LitElement {
 }
 
 @customElement("create-project")
-export class CreateProject extends LitElement {
+export class CreateProject extends BaseElement {
   async handleCreateProject() {
     const file = await newLixFile();
     await saveInOPFS({ blob: file, path: lixOPFSPath });

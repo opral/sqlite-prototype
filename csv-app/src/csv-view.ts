@@ -5,6 +5,8 @@ import { lix, openFile } from "./state";
 import { Task } from "@lit/task";
 import Papa from "papaparse";
 import { repeat } from "lit/directives/repeat.js";
+import { poll } from "./reactivity";
+import { Change } from "../../lix-sdk/src/schema";
 
 @customElement("csv-view")
 export class FileView extends SignalWatcher(LitElement) {
@@ -13,9 +15,10 @@ export class FileView extends SignalWatcher(LitElement) {
     task: async () => {
       const result = await lix.value?.db
         .selectFrom("file")
-        .select("blob")
+        .select(["id", "blob"])
         .where("path", "=", openFile.value!)
         .executeTakeFirstOrThrow();
+      this.fileId = result!.id;
       const decoder = new TextDecoder();
       const str = decoder.decode(result!.blob);
       return Papa.parse(str, { header: true });
@@ -27,7 +30,29 @@ export class FileView extends SignalWatcher(LitElement) {
   connectedCallback(): void {
     super.connectedCallback();
     openFile.subscribe(() => this.parseCsvTask.run());
+
+    poll(
+      async () => {
+        if (this.fileId === undefined) {
+          return [];
+        }
+        return (
+          (await lix.value?.db
+            .selectFrom("change")
+            .selectAll()
+            .where("file_id", "=", this.fileId)
+            .execute()) ?? []
+        );
+      },
+      (value) => (this.changes = value)
+    );
   }
+
+  @state()
+  changes: Change[] = [];
+
+  @state()
+  fileId?: string = undefined;
 
   render() {
     return html`
@@ -46,30 +71,31 @@ export class FileView extends SignalWatcher(LitElement) {
                 ${repeat(
                   csv.data,
                   (row) => row,
-                  (row: any) => html`
+                  (row: any, rowIndex) => html`
                     <tr>
-                      ${csv.meta.fields!.map(
-                        (field) =>
-                          html`<td style="padding: 1rem">
-                            <input
-                              value=${row[field]}
-                              @input=${(event: any) => {
-                                // @ts-ignore
-                                csv.data[csv.data.indexOf(row)][field] =
-                                  event.target.value;
-                                lix.value?.db
-                                  .updateTable("file")
-                                  .set({
-                                    blob: new TextEncoder().encode(
-                                      Papa.unparse(csv.data)
-                                    ),
-                                  })
-                                  .where("path", "=", openFile.value!)
-                                  .execute();
-                              }}
-                            />
-                          </td>`
-                      )}
+                      ${csv.meta.fields!.map((field, columnIndex) => {
+                        const cellId = `${rowIndex}-${columnIndex}`;
+                        return html`<td style="padding: 1rem">
+                          <input
+                          style=""
+                            value=${row[field]}
+                            @input=${(event: any) => {
+                              // @ts-ignore
+                              csv.data[csv.data.indexOf(row)][field] =
+                                event.target.value;
+                              lix.value?.db
+                                .updateTable("file")
+                                .set({
+                                  blob: new TextEncoder().encode(
+                                    Papa.unparse(csv.data)
+                                  ),
+                                })
+                                .where("path", "=", openFile.value!)
+                                .execute();
+                            }}
+                          />
+                        </td>`;
+                      })}
                     </tr>
                   `
                 )}

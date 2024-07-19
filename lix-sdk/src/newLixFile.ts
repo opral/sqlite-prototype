@@ -20,6 +20,15 @@ export async function newLixFile(): Promise<Blob> {
     ) strict;
       `;
 
+    await sql`
+      CREATE TABLE Change (
+        id TEXT PRIMARY KEY,
+        file_id TEXT NOT NULL,
+        plugin_key TEXT NOT NULL,
+        data TEXT NOT NULL
+      ) strict;
+    `;
+
     const fileHandle = await opfsRoot.getFileHandle(interimDbName);
     const file = await fileHandle.getFile();
     // load db into memory

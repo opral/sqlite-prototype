@@ -1,10 +1,33 @@
 /**
- * @type {import('lix-sdk').Plugin}
+ * @type {import('papaparse').Parser}
+ */
+let papaparse;
+
+/**
+ * @type {import('lix-sdk').LixPlugin}
  */
 export default {
-  name: "csv-plugin",
+  key: "csv-plugin",
   glob: "*.csv",
-  onFileChange: (file) => {
-    console.log(`File ${file.path} has changed`);
+  onFileChange: async ({ id, old, neu }) => {
+    await maybeImportPapaparse();
+    const oldString = new TextDecoder().decode(old);
+    const neuString = new TextDecoder().decode(neu);
+
+    return [
+      {
+        cellId: "0-1",
+        type: "update",
+        value: "83",
+      },
+    ];
   },
 };
+
+async function maybeImportPapaparse() {
+  if (!papaparse) {
+    // @ts-expect-error - no types
+    papaparse = await import("http://localhost:5173/papaparse.js");
+    console.log(papaparse);
+  }
+}

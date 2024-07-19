@@ -1,5 +1,12 @@
-export type Plugin = {
-  name: string;
+import type { LixFile } from "./schema";
+
+// named lixplugin to avoid conflict with built-in plugin type
+export type LixPlugin = {
+  key: string;
   glob: string;
-  onFileChange: (file: any) => void;
+  onFileChange: (args: {
+    id: LixFile["id"];
+    old: LixFile["blob"];
+    neu: LixFile["blob"];
+  }) => Promise<Array<Record<string, any>>>;
 };
