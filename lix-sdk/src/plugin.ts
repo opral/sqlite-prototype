@@ -5,7 +5,6 @@ export type LixPlugin = {
   key: string;
   glob: string;
   onFileChange: (args: {
-    id: LixFile["id"];
     old: LixFile["blob"];
     neu: LixFile["blob"];
   }) => Promise<Array<ChangeReport>>;

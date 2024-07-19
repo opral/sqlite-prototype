@@ -16,9 +16,9 @@ export async function openLixFromOPFS(path: string) {
 
   const plugins = await loadPlugins(sql);
 
-  await createCallbackFunction("fileModified", (id, oldBlob, newBlob) =>
+  await createCallbackFunction("fileModified", (fileId, oldBlob, newBlob) =>
     handleChanges({
-      id,
+      fileId,
       oldBlob,
       newBlob,
       plugins,
@@ -63,7 +63,7 @@ async function loadPlugins(sql: any) {
 }
 
 async function handleChanges(args: {
-  id;
+  fileId;
   oldBlob;
   newBlob;
   plugins: LixPlugin[];
@@ -71,22 +71,46 @@ async function handleChanges(args: {
 }) {
   for (const plugin of args.plugins) {
     const changes = await plugin.onFileChange({
-      id: args.id,
       old: args.oldBlob,
       neu: args.newBlob,
     });
     for (const change of changes) {
-      await args.db
-        .insertInto("change")
-        .values({
-          id: change.id,
-          type: change.type,
-          file_id: args.id,
-          plugin_key: plugin.key,
-          value: JSON.stringify(change.value),
-          meta: JSON.stringify(change.meta),
-        })
-        .execute();
+      const changeExists = await args.db
+        .selectFrom("change")
+        .select("id")
+        .where("id", "=", change.id)
+        .where("type", "=", change.type)
+        .where("file_id", "=", args.fileId)
+        .where("plugin_key", "=", plugin.key)
+        .executeTakeFirst();
+
+      if (changeExists) {
+        // overwrite the (uncomitted) change
+        // to avoid (potentially) saving every keystroke
+        await args.db
+          .updateTable("change")
+          .where("id", "=", change.id)
+          .where("type", "=", change.type)
+          .where("file_id", "=", args.fileId)
+          .where("plugin_key", "=", plugin.key)
+          .set({
+            value: JSON.stringify(change.value),
+            meta: JSON.stringify(change.meta),
+          })
+          .execute();
+      } else {
+        await args.db
+          .insertInto("change")
+          .values({
+            id: change.id,
+            type: change.type,
+            file_id: args.fileId,
+            plugin_key: plugin.key,
+            value: JSON.stringify(change.value),
+            meta: JSON.stringify(change.meta),
+          })
+          .execute();
+      }
     }
   }
 }

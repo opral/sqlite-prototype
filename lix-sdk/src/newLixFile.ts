@@ -27,7 +27,16 @@ export async function newLixFile(): Promise<Blob> {
         file_id TEXT NOT NULL,
         plugin_key TEXT NOT NULL,
         value TEXT NOT NULL,
-        meta TEXT
+        meta TEXT,
+
+        /*
+          uniqueness must be enforced for
+            - the primitive (id, type)
+            - files (file_id) as multiple files can exist
+            - plugins (plugin_key) as multiple plugins can exist
+            - that could theoretically track changes in parallel
+        */
+        UNIQUE(id, type, file_id, plugin_key)
       ) strict;
     `;
 
