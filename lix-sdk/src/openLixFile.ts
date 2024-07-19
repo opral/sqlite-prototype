@@ -17,24 +17,30 @@ export async function openLixFromOPFS(path: string) {
   const plugins = await loadPlugins(sql);
 
   await createCallbackFunction("fileModified", async (id, oldBlob, newBlob) => {
-    for (const plugin of plugins) {
-      const changes = await plugin.onFileChange({
-        id,
-        old: oldBlob,
-        neu: newBlob,
-      });
-      for (const change of changes) {
-        await db
-          .insertInto("change")
-          .values({
-            // todo - use uuids
-            id: (Math.random() * 100).toFixed() + "-" + Date.now(),
-            file_id: id,
-            plugin_key: plugin.key,
-            data: JSON.stringify(change),
-          })
-          .execute();
+    console.log("running modified");
+    try {
+      for (const plugin of plugins) {
+        const changes = await plugin.onFileChange({
+          id,
+          old: oldBlob,
+          neu: newBlob,
+        });
+        console.log({ changes });
+        for (const change of changes) {
+          await db
+            .insertInto("change")
+            .values({
+              // todo - use uuids
+              id: (Math.random() * 100).toFixed() + "-" + Date.now(),
+              file_id: id,
+              plugin_key: plugin.key,
+              data: JSON.stringify(change),
+            })
+            .execute();
+        }
       }
+    } catch (e) {
+      console.error("fileModified", e);
     }
   });
 
