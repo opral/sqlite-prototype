@@ -10,7 +10,7 @@ export default {
   key: "csv-plugin",
   glob: "*.csv",
   onFileChange: async ({ old, neu }) => {
-    /** @type any */
+    /** @type {import("lix-sdk").ChangeReport[]} */
     const result = [];
     await maybeImportPapaparse();
     const oldParsed = papaparse.parse(new TextDecoder().decode(old), {
@@ -29,9 +29,12 @@ export default {
       for (const column in row) {
         if (row[column] !== oldRow[column]) {
           const change = {
-            cellId: `${i}-${j}`,
-            type: "update",
+            id: `${i}-${j}`,
+            type: "cell",
             value: row[column],
+            meta: {
+              operation: "update",
+            },
           };
           result.push(change);
         }

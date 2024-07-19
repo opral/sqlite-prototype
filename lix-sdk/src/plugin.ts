@@ -8,5 +8,15 @@ export type LixPlugin = {
     id: LixFile["id"];
     old: LixFile["blob"];
     neu: LixFile["blob"];
-  }) => Promise<Array<Record<string, any>>>;
+  }) => Promise<Array<ChangeReport>>;
+};
+
+export type ChangeReport = {
+  id: string;
+  type: string;
+  /**
+   * Must be a valid JSON.
+   */
+  value: Record<string, any> | string;
+  meta?: Record<string, any>;
 };

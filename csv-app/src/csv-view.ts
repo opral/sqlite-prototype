@@ -77,7 +77,7 @@ export class CsvView extends BaseElement {
                       ${csv.meta.fields!.map((field, columnIndex) => {
                         const cellId = `${rowIndex}-${columnIndex}`;
                         const changes = this.changes.filter(
-                          (change) => (change.data as any).cellId === cellId
+                          (change) => change.id === cellId
                         );
                         const hasChanges = changes.length > 0;
                         return html`<td class="p-2">
@@ -113,7 +113,7 @@ export class CsvView extends BaseElement {
                                 ${hasChanges === false
                                   ? html`<p>No change history</p>`
                                   : changes.map((change) => {
-                                      return html`<p>${change.data.value}</p>`;
+                                      return html`<p>${change.value}</p>`;
                                     })}
                               </div>
                             </sl-dropdown>

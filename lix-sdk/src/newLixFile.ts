@@ -22,10 +22,12 @@ export async function newLixFile(): Promise<Blob> {
 
     await sql`
       CREATE TABLE Change (
-        id TEXT PRIMARY KEY,
+        id TEXT NOT NULL,
+        type TEXT NOT NULL,
         file_id TEXT NOT NULL,
         plugin_key TEXT NOT NULL,
-        data TEXT NOT NULL
+        value TEXT NOT NULL,
+        meta TEXT
       ) strict;
     `;
 

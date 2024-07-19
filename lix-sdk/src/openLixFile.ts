@@ -16,33 +16,15 @@ export async function openLixFromOPFS(path: string) {
 
   const plugins = await loadPlugins(sql);
 
-  await createCallbackFunction("fileModified", async (id, oldBlob, newBlob) => {
-    console.log("running modified");
-    try {
-      for (const plugin of plugins) {
-        const changes = await plugin.onFileChange({
-          id,
-          old: oldBlob,
-          neu: newBlob,
-        });
-        console.log({ changes });
-        for (const change of changes) {
-          await db
-            .insertInto("change")
-            .values({
-              // todo - use uuids
-              id: (Math.random() * 100).toFixed() + "-" + Date.now(),
-              file_id: id,
-              plugin_key: plugin.key,
-              data: JSON.stringify(change),
-            })
-            .execute();
-        }
-      }
-    } catch (e) {
-      console.error("fileModified", e);
-    }
-  });
+  await createCallbackFunction("fileModified", (id, oldBlob, newBlob) =>
+    handleChanges({
+      id,
+      oldBlob,
+      newBlob,
+      plugins,
+      db,
+    })
+  );
 
   await sql`
   CREATE TEMP TRIGGER file_modified AFTER UPDATE ON File
@@ -78,4 +60,33 @@ async function loadPlugins(sql: any) {
   );
 
   return plugins as LixPlugin[];
+}
+
+async function handleChanges(args: {
+  id;
+  oldBlob;
+  newBlob;
+  plugins: LixPlugin[];
+  db: Kysely<Database>;
+}) {
+  for (const plugin of args.plugins) {
+    const changes = await plugin.onFileChange({
+      id: args.id,
+      old: args.oldBlob,
+      neu: args.newBlob,
+    });
+    for (const change of changes) {
+      await args.db
+        .insertInto("change")
+        .values({
+          id: change.id,
+          type: change.type,
+          file_id: args.id,
+          plugin_key: plugin.key,
+          value: JSON.stringify(change.value),
+          meta: JSON.stringify(change.meta),
+        })
+        .execute();
+    }
+  }
 }
