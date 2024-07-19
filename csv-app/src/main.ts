@@ -7,7 +7,7 @@ import { lix, openFile } from "./state";
 import "./file-view";
 import "./csv-view";
 // @ts-expect-error - no types
-import plugin from "./csv-plugin?raw";
+import plugin from "./csv-plugin.js?raw";
 
 const lixOPFSPath = "temporary.lix";
 
@@ -42,6 +42,8 @@ export class App extends SignalWatcher(LitElement) {
             <file-view></file-view>
           </div>`
         : html`<p>No lix loaded</p>`}
+      <hr />
+      <h2>Meta</h2>
       <hr />
       ${openFile.value ? html`<csv-view></csv-view>` : nothing}
     `;
@@ -78,19 +80,6 @@ export class InlangFileImport extends LitElement {
         <button @click=${() => this.inputRef.value?.click()}>
           Import file
         </button>
-      </div>
-    `;
-  }
-}
-
-@customElement("file-exporter")
-export class InlangFileExport extends LitElement {
-  async handleFileSelection(event: any) {}
-
-  render() {
-    return html`
-      <div>
-        <button>Export file</button>
       </div>
     `;
   }
