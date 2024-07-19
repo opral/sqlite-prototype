@@ -40,6 +40,7 @@ export class App extends SignalWatcher(LitElement) {
             <file-view></file-view>
           </div>`
         : html`<p>No lix loaded</p>`}
+      <hr />
       ${openFile.value ? html`<csv-view></csv-view>` : nothing}
     `;
   }
@@ -51,9 +52,12 @@ export class InlangFileImport extends LitElement {
     const file: File = event.target.files[0];
     await lix.value?.db
       .insertInto("file")
-      .values({ id: "3", path: file.name, data: await file.arrayBuffer() })
+      .values({
+        id: (Math.random() * 100).toFixed(),
+        path: file.name,
+        data: await file.arrayBuffer(),
+      })
       .execute();
-    // await saveInOPFS({ blob: file, path: file });
   }
 
   inputRef: Ref<HTMLInputElement> = createRef();

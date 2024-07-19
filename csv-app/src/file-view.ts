@@ -7,31 +7,42 @@ import { poll } from "./reactivity";
 @customElement("file-view")
 export class FileView extends SignalWatcher(LitElement) {
   @state()
-  files: any = true;
+  files: any = [];
 
   connectedCallback() {
+    super.connectedCallback();
     poll(
       async () => {
         const result = await lix.value?.db
           .selectFrom("file")
           .select(["id", "path"])
           .execute();
-        console.log({ result });
         return result ?? [];
       },
-      (files) => {
-        console.log("callback", { files });
-        this.files = ["Sss"];
-        this.requestUpdate();
-      }
+      (files) => (this.files = files)
     );
   }
 
   render() {
     return html`
       <h2>Files</h2>
-      <p>${this.files}</p>
-      <p>${this.files.length === 0 ? "No files" : ""}</p>
+      ${this.files.length === 0
+        ? html`<p>No files</p>`
+        : html`<ul>
+            ${this.files.map(
+              (file: any) =>
+                html`<li>
+                  <a
+                    style="${openFile.value === file.path
+                      ? "font-weight: 800"
+                      : ""}"
+                    @click=${() => (openFile.value = file.path)}
+                  >
+                    ${file.path}</a
+                  >
+                </li>`
+            )}
+          </ul>`}
     `;
   }
 }
