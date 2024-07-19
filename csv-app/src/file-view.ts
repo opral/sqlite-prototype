@@ -31,15 +31,45 @@ export class FileView extends SignalWatcher(LitElement) {
         : html`<ul>
             ${this.files.map(
               (file: any) =>
-                html`<li>
-                  <a
-                    style="${openFile.value === file.path
-                      ? "font-weight: 800"
-                      : ""}"
-                    @click=${() => (openFile.value = file.path)}
-                  >
-                    ${file.path}</a
-                  >
+                html`<li
+                  style="${openFile.value === file.path
+                    ? "font-weight: 800"
+                    : ""}"
+                >
+                  <div style="display: flex; justify-content: space-between;">
+                    <p @click=${() => (openFile.value = file.path)}>
+                      ${file.path}
+                    </p>
+                    <div style="display: flex; gap: 1rem">
+                      <button
+                        @click=${async () => {
+                          const result = await lix.value?.db
+                            .selectFrom("file")
+                            .select("data")
+                            .where("path", "=", file.path)
+                            .executeTakeFirstOrThrow();
+                          const blob = new Blob([result!.data]);
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = file.path;
+                          a.click();
+                        }}
+                      >
+                        Download
+                      </button>
+                      <button
+                        @click=${async () => {
+                          await lix.value?.db
+                            .deleteFrom("file")
+                            .where("path", "=", file.path)
+                            .execute();
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
                 </li>`
             )}
           </ul>`}

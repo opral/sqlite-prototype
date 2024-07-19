@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { SignalWatcher } from "@lit-labs/preact-signals";
+import { SignalWatcher, watch } from "@lit-labs/preact-signals";
 import { lix, openFile } from "./state";
 import { Task } from "@lit/task";
 import Papa from "papaparse";
@@ -21,6 +21,13 @@ export class FileView extends SignalWatcher(LitElement) {
       return Papa.parse(str, { header: true });
     },
   });
+
+  // ugly workaround to get the task to re-run once
+  // another file has been selected
+  connectedCallback(): void {
+    super.connectedCallback();
+    openFile.subscribe(() => this.parseCsvTask.run());
+  }
 
   render() {
     return html`
@@ -47,6 +54,7 @@ export class FileView extends SignalWatcher(LitElement) {
                             <input
                               value=${row[field]}
                               @input=${(event) => {
+                                console.log({ path: openFile.value });
                                 csv.data[csv.data.indexOf(row)][field] =
                                   event.target.value;
                                 lix.value?.db
