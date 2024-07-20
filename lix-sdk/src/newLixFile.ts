@@ -21,22 +21,20 @@ export async function newLixFile(): Promise<Blob> {
   
     CREATE TABLE change (
       id TEXT PRIMARY KEY,
-      type_id TEXT NOT NULL,
       type TEXT NOT NULL,
       file_id TEXT NOT NULL,
       plugin_key TEXT NOT NULL,
-      data TEXT NOT NULL,
+      value TEXT NOT NULL,
       meta TEXT,
       commit_id TEXT NOT NULL
     ) strict;
 
     CREATE TABLE uncommitted_change (
       id TEXT PRIMARY KEY,
-      type_id TEXT NOT NULL,
       type TEXT NOT NULL,
       file_id TEXT NOT NULL,
       plugin_key TEXT NOT NULL,
-      data TEXT NOT NULL,
+      value TEXT NOT NULL,
       meta TEXT
     ) strict;
 

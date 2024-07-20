@@ -17,6 +17,8 @@ export async function commit(args: {
     return;
   }
 
+  console.log({ uncommittedChanges });
+
   const commit = await args.db
     .insertInto("commit")
     .values({
@@ -37,7 +39,7 @@ export async function commit(args: {
         ...change,
         id: v4(),
         meta: JSON.stringify(change.meta),
-        data: JSON.stringify(change.data),
+        value: JSON.stringify(change.value),
         commit_id: commit.id,
       }))
     )

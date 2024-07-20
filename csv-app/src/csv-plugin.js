@@ -6,11 +6,12 @@ let papaparse;
 /**
  * @type {import('lix-sdk').LixPlugin<{
  *  cell: {
- *    value: string
+ *    id: string
+ *    text: string
  *  }
  * }>}
  */
-export default {
+const plugin = {
   key: "csv-plugin",
   glob: "*.csv",
   diff: {
@@ -32,25 +33,40 @@ export default {
         }
         let j = 0;
         for (const column in row) {
-          if (row[column] !== oldRow[column]) {
-            const change = {
-              typeId: `${i}-${j}`,
-              type: "bundle",
-              data: {
-                value: row[column],
-              },
-              meta: {
-                operation: "update",
-              },
-            };
-            result.push(change);
+          const id = `${i}-${j}`;
+          const diff = await plugin.diff.cell({
+            old: {
+              id,
+              text: oldRow[column],
+            },
+            neu: {
+              id,
+              text: row[column],
+            },
+          });
+          if (diff.length > 0) {
+            result.push(...diff);
           }
           j++;
         }
       }
       return result;
     },
-    cell: undefined,
+    cell: async ({ old, neu }) => {
+      if (old.text === neu.text) {
+        return [];
+      } else {
+        return [
+          {
+            type: "cell",
+            value: {
+              id: neu.id,
+              text: neu.text,
+            },
+          },
+        ];
+      }
+    },
   },
 };
 
@@ -60,3 +76,5 @@ async function maybeImportPapaparse() {
     papaparse = (await import("http://localhost:5173/papaparse.js")).default;
   }
 }
+
+export default plugin;

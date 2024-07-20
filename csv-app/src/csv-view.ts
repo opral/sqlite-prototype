@@ -108,13 +108,13 @@ export class CsvView extends BaseElement {
                         const cellId = `${rowIndex}-${columnIndex}`;
                         const uncommittedChanges =
                           this.uncommittedChanges.filter(
-                            (change) => change.type_id === cellId
+                            (change) => change.value.id === cellId
                           );
                         const hasUncommittedChanges =
                           uncommittedChanges.length > 0;
 
                         const changes = this.changes.filter(
-                          (change) => change.type_id === cellId
+                          (change) => change.value.id === cellId
                         );
                         const hasChanges = changes.length > 0;
 
@@ -167,7 +167,7 @@ export class CsvView extends BaseElement {
                                         return html`
                                           <div class="space-y-2 pb-3">
                                             <div class="p-0">
-                                              ${change.data.value}
+                                              ${change.value.text}
                                             </div>
                                             <div class="text-sm ">
                                               <div>
@@ -183,7 +183,7 @@ export class CsvView extends BaseElement {
                                                 // @ts-ignore
                                                 csv.data[csv.data.indexOf(row)][
                                                   field
-                                                ] = change.data.value;
+                                                ] = change.value.text;
                                                 // manually saving file to lix
                                                 lix.value?.db
                                                   .updateTable("file")

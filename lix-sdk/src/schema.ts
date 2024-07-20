@@ -1,4 +1,5 @@
 import { LixPlugin } from "./plugin";
+import { JSONColumnType } from "kysely";
 
 export type Database = {
   file: LixFile;
@@ -42,14 +43,6 @@ export type Change = {
   plugin_key: LixPlugin["key"];
 
   /**
-   * Id of the type.
-   *
-   * @example
-   *   - For a csv cell change, the type_id would be the cell id.
-   *   - For an inlang message change, the type_id would be the message id.
-   */
-  type_id: string;
-  /**
    * The type of change that was made.
    *
    * @example
@@ -65,7 +58,9 @@ export type Change = {
    *   - For a csv cell change, the value would be the new cell value.
    *   - For an inlang message change, the value would be the new message.
    */
-  data: Record<string, any>; // JSONB
+  value: Record<string, any> & {
+    id: string;
+  }; // JSONB
   /**
    * Additional metadata for the change used by the plugin
    * to process changes.
@@ -89,14 +84,6 @@ export type UncommittedChange = {
    */
   plugin_key: LixPlugin["key"];
   /**
-   * Id of the type.
-   *
-   * @example
-   *   - For a csv cell change, the type_id would be the cell id.
-   *   - For an inlang message change, the type_id would be the message id.
-   */
-  type_id: string;
-  /**
    * The type of change that was made.
    *
    * @example
@@ -112,7 +99,9 @@ export type UncommittedChange = {
    *   - For a csv cell change, the value would be the new cell value.
    *   - For an inlang message change, the value would be the new message.
    */
-  data: Record<string, any>; // JSONB
+  value: Record<string, any> & {
+    id: string;
+  }; // JSONB
   /**
    * Additional metadata for the change used by the plugin
    * to process changes.

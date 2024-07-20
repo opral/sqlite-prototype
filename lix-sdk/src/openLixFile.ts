@@ -83,7 +83,7 @@ async function handleFileChange(args: {
       const changeExists = await args.db
         .selectFrom("uncommitted_change")
         .select("id")
-        .where("type_id", "=", change.typeId)
+        .where((eb) => eb.ref("value", "->>").key("id"), "=", change.value.id)
         .where("type", "=", change.type)
         .where("file_id", "=", args.fileId)
         .where("plugin_key", "=", plugin.key)
@@ -94,13 +94,13 @@ async function handleFileChange(args: {
         // to avoid (potentially) saving every keystroke change
         await args.db
           .updateTable("uncommitted_change")
-          .where("type_id", "=", change.typeId)
+          .where((eb) => eb.ref("value", "->>").key("id"), "=", change.value.id)
           .where("type", "=", change.type)
           .where("file_id", "=", args.fileId)
           .where("plugin_key", "=", plugin.key)
           .set({
             // @ts-expect-error - database expects stringified json
-            data: JSON.stringify(change.data),
+            value: JSON.stringify(change.value),
             meta: JSON.stringify(change.meta),
           })
           .execute();
@@ -109,12 +109,11 @@ async function handleFileChange(args: {
           .insertInto("uncommitted_change")
           .values({
             id: v4(),
-            type_id: change.typeId,
             type: change.type,
             file_id: args.fileId,
             plugin_key: plugin.key,
             // @ts-expect-error - database expects stringified json
-            data: JSON.stringify(change.data),
+            value: JSON.stringify(change.value),
             meta: JSON.stringify(change.meta),
           })
           .execute();
