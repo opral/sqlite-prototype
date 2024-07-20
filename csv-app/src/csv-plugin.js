@@ -30,8 +30,10 @@ export default {
         if (row[column] !== oldRow[column]) {
           const change = {
             typeId: `${i}-${j}`,
-            type: "cell",
-            value: row[column],
+            type: "bundle",
+            data: {
+              value: row[column],
+            },
             meta: {
               operation: "update",
             },

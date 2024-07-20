@@ -20,6 +20,6 @@ export type ChangeReport = {
   /**
    * Must be a valid JSON.
    */
-  value: Record<string, any> | string;
+  data: Record<string, any>;
   meta?: Record<string, any>;
 };

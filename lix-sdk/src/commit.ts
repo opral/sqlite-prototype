@@ -32,23 +32,22 @@ export async function commit(args: {
   await args.db
     .insertInto("change")
     .values(
+      // @ts-expect-error - database expects stringified json
       uncommittedChanges.map((change) => ({
         ...change,
         id: v4(),
         meta: JSON.stringify(change.meta),
-        value: JSON.stringify(change.value),
+        data: JSON.stringify(change.data),
         commit_id: commit.id,
       }))
     )
     .execute();
 
-  await args.db
-    .deleteFrom("uncommitted_change")
-    .where(
-      "id",
-      "=",
-      uncommittedChanges.map((c) => c.id)
-    )
-    .execute();
+  for (const change of uncommittedChanges) {
+    await args.db
+      .deleteFrom("uncommitted_change")
+      .where("id", "=", change.id)
+      .execute();
+  }
   console.log("Committed changes");
 }

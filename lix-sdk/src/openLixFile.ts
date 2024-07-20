@@ -99,7 +99,8 @@ async function handleChanges(args: {
           .where("file_id", "=", args.fileId)
           .where("plugin_key", "=", plugin.key)
           .set({
-            value: JSON.stringify(change.value),
+            // @ts-expect-error - database expects stringified json
+            data: JSON.stringify(change.data),
             meta: JSON.stringify(change.meta),
           })
           .execute();
@@ -112,7 +113,8 @@ async function handleChanges(args: {
             type: change.type,
             file_id: args.fileId,
             plugin_key: plugin.key,
-            value: JSON.stringify(change.value),
+            // @ts-expect-error - database expects stringified json
+            data: JSON.stringify(change.data),
             meta: JSON.stringify(change.meta),
           })
           .execute();

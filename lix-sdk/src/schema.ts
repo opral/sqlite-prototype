@@ -65,7 +65,7 @@ export type Change = {
    *   - For a csv cell change, the value would be the new cell value.
    *   - For an inlang message change, the value would be the new message.
    */
-  value: string; // JSONB
+  data: Record<string, any>; // JSONB
   /**
    * Additional metadata for the change used by the plugin
    * to process changes.
@@ -112,7 +112,7 @@ export type UncommittedChange = {
    *   - For a csv cell change, the value would be the new cell value.
    *   - For an inlang message change, the value would be the new message.
    */
-  value: string; // JSONB
+  data: Record<string, any>; // JSONB
   /**
    * Additional metadata for the change used by the plugin
    * to process changes.

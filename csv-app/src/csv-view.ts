@@ -6,8 +6,9 @@ import Papa from "papaparse";
 import { classMap } from "lit/directives/class-map.js";
 import { repeat } from "lit/directives/repeat.js";
 import { poll } from "./reactivity";
-import { Change, UncommittedChange } from "../../lix-sdk/src/schema";
+import { Change, UncommittedChange, Commit } from "../../lix-sdk/src/schema";
 import { BaseElement } from "./baseElement";
+import { jsonObjectFrom } from "lix-sdk";
 
 @customElement("csv-view")
 export class CsvView extends BaseElement {
@@ -46,13 +47,29 @@ export class CsvView extends BaseElement {
         const changes = await lix.value?.db
           .selectFrom("change")
           .selectAll()
+          .select((eb) =>
+            jsonObjectFrom(
+              eb
+                .selectFrom("commit")
+                .select([
+                  "commit.id",
+                  "commit.zoned_date_time",
+                  "commit.user_id",
+                  "commit.description",
+                ])
+                .whereRef("commit.id", "=", "change.commit_id")
+            ).as("commit")
+          )
           .where("file_id", "=", this.fileId)
+          .innerJoin("commit", "commit.id", "change.commit_id")
+          .orderBy("commit.zoned_date_time", "desc")
           .execute();
         return { uncommittedChanges, changes };
       },
       (value) => {
         if (value) {
           this.uncommittedChanges = value.uncommittedChanges ?? [];
+          // @ts-expect-error - commit can be undefined
           this.changes = value.changes ?? [];
         }
       }
@@ -63,7 +80,7 @@ export class CsvView extends BaseElement {
   uncommittedChanges: UncommittedChange[] = [];
 
   @state()
-  changes: Change[] = [];
+  changes: (Change & { commit: Commit })[] = [];
 
   @state()
   fileId?: string = undefined;
@@ -113,6 +130,7 @@ export class CsvView extends BaseElement {
                                 // @ts-ignore
                                 csv.data[csv.data.indexOf(row)][field] =
                                   event.target.value;
+                                // manually saving file to lix
                                 lix.value?.db
                                   .updateTable("file")
                                   .set({
@@ -133,9 +151,37 @@ export class CsvView extends BaseElement {
                               <div class="bg-white p-4">
                                 ${hasChanges === false
                                   ? html`<p>No change history</p>`
-                                  : changes.map((change) => {
-                                      return html`<p>${change.value}</p>`;
-                                    })}
+                                  : html`<div class="divide-y space-y-3">
+                                      ${changes.map((change) => {
+                                        const now = new Date();
+                                        const changeDate = new Date(
+                                          change.commit.zoned_date_time
+                                        );
+                                        const diff =
+                                          now.getTime() - changeDate.getTime();
+
+                                        const minutesAgo = Math.floor(
+                                          diff / 1000 / 60
+                                        );
+
+                                        return html`
+                                          <div class="space-y-2 pb-3">
+                                            <div class="p-0">
+                                              ${change.data.value}
+                                            </div>
+                                            <div class="text-sm ">
+                                              <div>
+                                                ${change.commit.description}
+                                              </div>
+                                            </div>
+                                            <div class="text-sm italic">
+                                              by ${change.commit.user_id}
+                                              ${minutesAgo} minutes ago
+                                            </div>
+                                          </div>
+                                        `;
+                                      })}
+                                    </div>`}
                               </div>
                             </sl-dropdown>
                           </div>
