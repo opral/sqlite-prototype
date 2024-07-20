@@ -15,7 +15,7 @@ export type LixPlugin = {
 };
 
 export type ChangeReport = {
-  id: string;
+  typeId: string;
   type: string;
   /**
    * Must be a valid JSON.

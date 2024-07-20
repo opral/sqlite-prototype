@@ -3,6 +3,7 @@ import { SQLocalKysely } from "sqlocal/kysely";
 import { Database } from "./schema";
 import { LixPlugin } from "./plugin";
 import { commit } from "./commit";
+import { v4 } from "uuid";
 
 /**
  *
@@ -82,7 +83,7 @@ async function handleChanges(args: {
       const changeExists = await args.db
         .selectFrom("uncommitted_change")
         .select("id")
-        .where("id", "=", change.id)
+        .where("type_id", "=", change.typeId)
         .where("type", "=", change.type)
         .where("file_id", "=", args.fileId)
         .where("plugin_key", "=", plugin.key)
@@ -93,7 +94,7 @@ async function handleChanges(args: {
         // to avoid (potentially) saving every keystroke change
         await args.db
           .updateTable("uncommitted_change")
-          .where("id", "=", change.id)
+          .where("type_id", "=", change.typeId)
           .where("type", "=", change.type)
           .where("file_id", "=", args.fileId)
           .where("plugin_key", "=", plugin.key)
@@ -106,7 +107,8 @@ async function handleChanges(args: {
         await args.db
           .insertInto("uncommitted_change")
           .values({
-            id: change.id,
+            id: v4(),
+            type_id: change.typeId,
             type: change.type,
             file_id: args.fileId,
             plugin_key: plugin.key,

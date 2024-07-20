@@ -20,7 +20,8 @@ export async function newLixFile(): Promise<Blob> {
     ) strict;
   
     CREATE TABLE change (
-      id TEXT NOT NULL,
+      id TEXT PRIMARY KEY,
+      type_id TEXT NOT NULL,
       type TEXT NOT NULL,
       file_id TEXT NOT NULL,
       plugin_key TEXT NOT NULL,
@@ -30,22 +31,24 @@ export async function newLixFile(): Promise<Blob> {
 
       /*
         uniqueness must be enforced for
-          - the primitive (id, type)
+          - the primitive (type_id, type)
           - files (file_id) as multiple files can exist
           - plugins (plugin_key) as multiple plugins can exist
           - that could theoretically track changes in parallel
       */
-      UNIQUE(id, type, file_id, plugin_key)
+      UNIQUE(type_id, type, file_id, plugin_key)
     ) strict;
 
     CREATE TABLE uncommitted_change (
-      id TEXT NOT NULL,
+      id TEXT PRIMARY KEY,
+      type_id TEXT NOT NULL,
       type TEXT NOT NULL,
       file_id TEXT NOT NULL,
       plugin_key TEXT NOT NULL,
       value TEXT NOT NULL,
       meta TEXT,
-      UNIQUE(id, type, file_id, plugin_key)
+      
+      UNIQUE(type_id, type, file_id, plugin_key)
     ) strict;
 
     CREATE TABLE 'commit' (

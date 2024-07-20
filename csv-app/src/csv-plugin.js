@@ -29,7 +29,7 @@ export default {
       for (const column in row) {
         if (row[column] !== oldRow[column]) {
           const change = {
-            id: `${i}-${j}`,
+            typeId: `${i}-${j}`,
             type: "cell",
             value: row[column],
             meta: {

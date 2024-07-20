@@ -1,5 +1,5 @@
 import { LitElement, html, nothing, css } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, state, property } from "lit/decorators.js";
 import { Ref, createRef, ref } from "lit/directives/ref.js";
 import { newLixFile, openLixFromOPFS } from "lix-sdk";
 import { lix, openFile } from "./state";
@@ -30,21 +30,7 @@ export class App extends BaseElement {
         }
       });
     }
-    poll(
-      () => {
-        return lix.value?.db
-          .selectFrom("uncommitted_change")
-          .select(({ fn }) => [fn.count<number>("id").as("count")])
-          .executeTakeFirst();
-      },
-      (value) => {
-        if (value) this.numUncommittedChanges = value?.count;
-      }
-    );
   }
-
-  @state()
-  numUncommittedChanges = 0;
 
   render() {
     return html`
@@ -60,22 +46,106 @@ export class App extends BaseElement {
           </div>`
         : html`<p>No lix loaded</p>`}
       <hr />
-      <h2>Meta</h2>
-      <div class="flex gap-4">
-        <p>Uncommitted changes: ${this.numUncommittedChanges}</p>
+      <lix-actions></lix-actions>
+      <hr />
+      ${openFile.value ? html`<csv-view></csv-view>` : nothing}
+    `;
+  }
+}
+
+@customElement("lix-actions")
+export class LixActions extends BaseElement {
+  connectedCallback(): void {
+    super.connectedCallback();
+    poll(
+      async () => {
+        const numUncommittedChanges = await lix.value?.db
+          .selectFrom("uncommitted_change")
+          .select(({ fn }) => [fn.count<number>("id").as("count")])
+          .executeTakeFirst();
+        const comittedChanges = await lix.value?.db
+          .selectFrom("commit")
+          .select(({ fn }) => [fn.count<number>("id").as("count")])
+          .executeTakeFirst();
+        return { numUncommittedChanges, comittedChanges };
+      },
+      ({ numUncommittedChanges, comittedChanges }) => {
+        if (numUncommittedChanges && comittedChanges) {
+          this.numUncommittedChanges = numUncommittedChanges!.count;
+          this.numCommittedChanges = comittedChanges!.count;
+        }
+      }
+    );
+  }
+
+  @state()
+  numUncommittedChanges = 0;
+
+  @state()
+  numCommittedChanges = 0;
+
+  @state()
+  showCommitDialog = false;
+
+  @state()
+  username = "Samuel";
+
+  async handleCommit() {
+    const description =
+      // @ts-expect-error - no types
+      this.shadowRoot!.getElementById("commit-description").value;
+
+    await lix.value!.commit({
+      userId: this.username,
+      description,
+    });
+    this.showCommitDialog = false;
+  }
+
+  render() {
+    return html`
+      <h2>Lix actions</h2>
+      <!-- name -->
+      <div>
+        <label for="name">Name</label>
+        <input
+          id="name"
+          type="text"
+          .value=${this.username}
+          @input=${(e: any) => {
+            this.username = e.target.value;
+          }}
+        />
+      </div>
+      <!-- commits -->
+      <div class="flex gap-4 justify-between">
+        <div class="flex gap-4">
+          <p>Uncommitted changes: ${this.numUncommittedChanges}</p>
+          <p>Committed changes: ${this.numCommittedChanges}</p>
+        </div>
         <button
-          @click=${async () => {
-            await lix.value!.commit({
-              userId: "samuel",
-              description: "Committing changes",
-            });
+          @click=${() => {
+            this.showCommitDialog = true;
           }}
         >
           Commit
         </button>
+
+        ${this.showCommitDialog === false
+          ? nothing
+          : html` <dialog open class="z-50">
+              <p>Description</p>
+              <textarea
+                id="commit-description"
+                name="Text1"
+                cols="40"
+                rows="5"
+              ></textarea>
+              <form method="dialog">
+                <button @click=${this.handleCommit}>Commit changes</button>
+              </form>
+            </dialog>`}
       </div>
-      <hr />
-      ${openFile.value ? html`<csv-view></csv-view>` : nothing}
     `;
   }
 }

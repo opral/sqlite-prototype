@@ -40,6 +40,15 @@ export type Change = {
    * in case the user changes the plugin configuration.
    */
   plugin_key: LixPlugin["key"];
+
+  /**
+   * Id of the type.
+   *
+   * @example
+   *   - For a csv cell change, the type_id would be the cell id.
+   *   - For an inlang message change, the type_id would be the message id.
+   */
+  type_id: string;
   /**
    * The type of change that was made.
    *
@@ -79,6 +88,14 @@ export type UncommittedChange = {
    * in case the user changes the plugin configuration.
    */
   plugin_key: LixPlugin["key"];
+  /**
+   * Id of the type.
+   *
+   * @example
+   *   - For a csv cell change, the type_id would be the cell id.
+   *   - For an inlang message change, the type_id would be the message id.
+   */
+  type_id: string;
   /**
    * The type of change that was made.
    *

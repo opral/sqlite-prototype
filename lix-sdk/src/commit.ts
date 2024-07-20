@@ -8,10 +8,14 @@ export async function commit(args: {
   description: string;
 }) {
   const uncommittedChanges = await args.db
-    .selectFrom("change")
-    .select("id")
-    .where("commit_id", "=", "null")
+    .selectFrom("uncommitted_change")
+    .selectAll()
     .execute();
+
+  if (uncommittedChanges.length === 0) {
+    console.log("No changes to commit");
+    return;
+  }
 
   const commit = await args.db
     .insertInto("commit")
@@ -25,14 +29,26 @@ export async function commit(args: {
     .returning("id")
     .executeTakeFirstOrThrow();
 
-  for (const change of uncommittedChanges) {
-    await args.db
-      .updateTable("change")
-      .where("id", "=", change.id)
-      .set({
+  await args.db
+    .insertInto("change")
+    .values(
+      uncommittedChanges.map((change) => ({
+        ...change,
+        id: v4(),
+        meta: JSON.stringify(change.meta),
+        value: JSON.stringify(change.value),
         commit_id: commit.id,
-      })
-      .execute();
-  }
+      }))
+    )
+    .execute();
+
+  await args.db
+    .deleteFrom("uncommitted_change")
+    .where(
+      "id",
+      "=",
+      uncommittedChanges.map((c) => c.id)
+    )
+    .execute();
   console.log("Committed changes");
 }
