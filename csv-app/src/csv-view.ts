@@ -178,6 +178,30 @@ export class CsvView extends BaseElement {
                                               by ${change.commit.user_id}
                                               ${minutesAgo} minutes ago
                                             </div>
+                                            <button
+                                              @click=${() => {
+                                                // @ts-ignore
+                                                csv.data[csv.data.indexOf(row)][
+                                                  field
+                                                ] = change.data.value;
+                                                // manually saving file to lix
+                                                lix.value?.db
+                                                  .updateTable("file")
+                                                  .set({
+                                                    blob: new TextEncoder().encode(
+                                                      Papa.unparse(csv.data)
+                                                    ),
+                                                  })
+                                                  .where(
+                                                    "path",
+                                                    "=",
+                                                    openFile.value!
+                                                  )
+                                                  .execute();
+                                              }}
+                                            >
+                                              Rollback
+                                            </button>
                                           </div>
                                         `;
                                       })}

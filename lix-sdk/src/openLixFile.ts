@@ -19,7 +19,7 @@ export async function openLixFromOPFS(path: string) {
   const plugins = await loadPlugins(sql);
 
   await createCallbackFunction("fileModified", (fileId, oldBlob, newBlob) =>
-    handleChanges({
+    handleFileChange({
       fileId,
       oldBlob,
       newBlob,
@@ -67,7 +67,7 @@ async function loadPlugins(sql: any) {
   return plugins as LixPlugin[];
 }
 
-async function handleChanges(args: {
+async function handleFileChange(args: {
   fileId;
   oldBlob;
   newBlob;
@@ -75,7 +75,7 @@ async function handleChanges(args: {
   db: Kysely<Database>;
 }) {
   for (const plugin of args.plugins) {
-    const changes = await plugin.onFileChange({
+    const changes = await plugin.diff!.file!({
       old: args.oldBlob,
       neu: args.newBlob,
     });
