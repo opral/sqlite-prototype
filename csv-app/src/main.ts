@@ -47,7 +47,7 @@ export class App extends BaseElement {
 
   render() {
     return html`
-      <h1>Welcome to fink 2.0!</h1>
+      <h1>Welcome to Opral CSV</h1>
       <div style="display: flex; gap: 2rem;">
         <create-project></create-project>
         <file-importer></file-importer>
