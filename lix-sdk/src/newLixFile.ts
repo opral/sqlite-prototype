@@ -27,16 +27,7 @@ export async function newLixFile(): Promise<Blob> {
       plugin_key TEXT NOT NULL,
       value TEXT NOT NULL,
       meta TEXT,
-      commit_id TEXT NOT NULL,
-
-      /*
-        uniqueness must be enforced for
-          - the primitive (type_id, type)
-          - files (file_id) as multiple files can exist
-          - plugins (plugin_key) as multiple plugins can exist
-          - that could theoretically track changes in parallel
-      */
-      UNIQUE(type_id, type, file_id, plugin_key)
+      commit_id TEXT NOT NULL
     ) strict;
 
     CREATE TABLE uncommitted_change (
@@ -46,9 +37,7 @@ export async function newLixFile(): Promise<Blob> {
       file_id TEXT NOT NULL,
       plugin_key TEXT NOT NULL,
       value TEXT NOT NULL,
-      meta TEXT,
-      
-      UNIQUE(type_id, type, file_id, plugin_key)
+      meta TEXT
     ) strict;
 
     CREATE TABLE 'commit' (

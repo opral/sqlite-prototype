@@ -6,7 +6,7 @@ import Papa from "papaparse";
 import { classMap } from "lit/directives/class-map.js";
 import { repeat } from "lit/directives/repeat.js";
 import { poll } from "./reactivity";
-import { UncommittedChange } from "../../lix-sdk/src/schema";
+import { Change, UncommittedChange } from "../../lix-sdk/src/schema";
 import { BaseElement } from "./baseElement";
 
 @customElement("csv-view")
@@ -35,22 +35,35 @@ export class CsvView extends BaseElement {
     poll(
       async () => {
         if (this.fileId === undefined) {
-          return [];
+          return undefined;
         }
-        return (
-          (await lix.value?.db
-            .selectFrom("uncommitted_change")
-            .selectAll()
-            .where("file_id", "=", this.fileId)
-            .execute()) ?? []
-        );
+        const uncommittedChanges = await lix.value?.db
+          .selectFrom("uncommitted_change")
+          .selectAll()
+          .where("file_id", "=", this.fileId)
+          .execute();
+
+        const changes = await lix.value?.db
+          .selectFrom("change")
+          .selectAll()
+          .where("file_id", "=", this.fileId)
+          .execute();
+        return { uncommittedChanges, changes };
       },
-      (value) => (this.uncommittedChanges = value)
+      (value) => {
+        if (value) {
+          this.uncommittedChanges = value.uncommittedChanges ?? [];
+          this.changes = value.changes ?? [];
+        }
+      }
     );
   }
 
   @state()
   uncommittedChanges: UncommittedChange[] = [];
+
+  @state()
+  changes: Change[] = [];
 
   @state()
   fileId?: string = undefined;
@@ -76,16 +89,24 @@ export class CsvView extends BaseElement {
                     <tr>
                       ${csv.meta.fields!.map((field, columnIndex) => {
                         const cellId = `${rowIndex}-${columnIndex}`;
-                        const changes = this.uncommittedChanges.filter(
-                          (change) => change.id === cellId
+                        const uncommittedChanges =
+                          this.uncommittedChanges.filter(
+                            (change) => change.type_id === cellId
+                          );
+                        const hasUncommittedChanges =
+                          uncommittedChanges.length > 0;
+
+                        const changes = this.changes.filter(
+                          (change) => change.type_id === cellId
                         );
                         const hasChanges = changes.length > 0;
+
                         return html`<td class="p-2">
                           <div class="flex">
                             <input
                               class=${classMap({
-                                "border-2": hasChanges,
-                                "border-orange-500": hasChanges,
+                                "border-2": hasUncommittedChanges,
+                                "border-orange-500": hasUncommittedChanges,
                               })}
                               value=${row[field]}
                               @input=${(event: any) => {
