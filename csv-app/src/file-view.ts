@@ -21,10 +21,9 @@ export class FileView extends BaseElement {
         if (result && result.length > 0) {
           for (const file of result) {
             const changes = await lix.value?.db
-              .selectFrom("change")
+              .selectFrom("uncommitted_change")
               .select("id")
               .where("file_id", "=", file.id)
-              .where("commit_id", "is not", "null")
               .execute();
             file.hasUncommittedChanges = changes!.length > 0 ? true : false;
           }

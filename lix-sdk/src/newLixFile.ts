@@ -13,20 +13,20 @@ export async function newLixFile(): Promise<Blob> {
     const { sql, destroy } = new SQLocal(interimDbName);
     await sql`
 
-    CREATE TABLE File (
+    CREATE TABLE file (
       id TEXT PRIMARY KEY,
       path TEXT NOT NULL,
       blob BLOB NOT NULL
     ) strict;
   
-    CREATE TABLE Change (
+    CREATE TABLE change (
       id TEXT NOT NULL,
       type TEXT NOT NULL,
       file_id TEXT NOT NULL,
       plugin_key TEXT NOT NULL,
       value TEXT NOT NULL,
       meta TEXT,
-      commit_id TEXT,
+      commit_id TEXT NOT NULL,
 
       /*
         uniqueness must be enforced for
@@ -38,7 +38,17 @@ export async function newLixFile(): Promise<Blob> {
       UNIQUE(id, type, file_id, plugin_key)
     ) strict;
 
-    CREATE TABLE Peter (
+    CREATE TABLE uncommitted_change (
+      id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      file_id TEXT NOT NULL,
+      plugin_key TEXT NOT NULL,
+      value TEXT NOT NULL,
+      meta TEXT,
+      UNIQUE(id, type, file_id, plugin_key)
+    ) strict;
+
+    CREATE TABLE 'commit' (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       description TEXT NOT NULL,

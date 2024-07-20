@@ -2,6 +2,7 @@ import { Kysely, ParseJSONResultsPlugin } from "kysely";
 import { SQLocalKysely } from "sqlocal/kysely";
 import { Database } from "./schema";
 import { LixPlugin } from "./plugin";
+import { commit } from "./commit";
 
 /**
  *
@@ -37,6 +38,9 @@ export async function openLixFromOPFS(path: string) {
     db,
     sql,
     plugins,
+    commit: (args: { userId: string; description: string }) => {
+      return commit({ db, ...args });
+    },
   };
 }
 
@@ -76,7 +80,7 @@ async function handleChanges(args: {
     });
     for (const change of changes) {
       const changeExists = await args.db
-        .selectFrom("change")
+        .selectFrom("uncommitted_change")
         .select("id")
         .where("id", "=", change.id)
         .where("type", "=", change.type)
@@ -86,9 +90,9 @@ async function handleChanges(args: {
 
       if (changeExists) {
         // overwrite the (uncomitted) change
-        // to avoid (potentially) saving every keystroke
+        // to avoid (potentially) saving every keystroke change
         await args.db
-          .updateTable("change")
+          .updateTable("uncommitted_change")
           .where("id", "=", change.id)
           .where("type", "=", change.type)
           .where("file_id", "=", args.fileId)
@@ -100,7 +104,7 @@ async function handleChanges(args: {
           .execute();
       } else {
         await args.db
-          .insertInto("change")
+          .insertInto("uncommitted_change")
           .values({
             id: change.id,
             type: change.type,

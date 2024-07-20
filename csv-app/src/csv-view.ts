@@ -1,4 +1,4 @@
-import { html, nothing } from "lit";
+import { html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { lix, openFile } from "./state";
 import { Task } from "@lit/task";
@@ -6,7 +6,7 @@ import Papa from "papaparse";
 import { classMap } from "lit/directives/class-map.js";
 import { repeat } from "lit/directives/repeat.js";
 import { poll } from "./reactivity";
-import { Change } from "../../lix-sdk/src/schema";
+import { UncommittedChange } from "../../lix-sdk/src/schema";
 import { BaseElement } from "./baseElement";
 
 @customElement("csv-view")
@@ -39,18 +39,18 @@ export class CsvView extends BaseElement {
         }
         return (
           (await lix.value?.db
-            .selectFrom("change")
+            .selectFrom("uncommitted_change")
             .selectAll()
             .where("file_id", "=", this.fileId)
             .execute()) ?? []
         );
       },
-      (value) => (this.changes = value)
+      (value) => (this.uncommittedChanges = value)
     );
   }
 
   @state()
-  changes: Change[] = [];
+  uncommittedChanges: UncommittedChange[] = [];
 
   @state()
   fileId?: string = undefined;
@@ -76,7 +76,7 @@ export class CsvView extends BaseElement {
                     <tr>
                       ${csv.meta.fields!.map((field, columnIndex) => {
                         const cellId = `${rowIndex}-${columnIndex}`;
-                        const changes = this.changes.filter(
+                        const changes = this.uncommittedChanges.filter(
                           (change) => change.id === cellId
                         );
                         const hasChanges = changes.length > 0;

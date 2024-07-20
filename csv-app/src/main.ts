@@ -10,6 +10,7 @@ import plugin from "./csv-plugin.js?raw";
 import { poll } from "./reactivity";
 import { BaseElement } from "./baseElement";
 import "@shoelace-style/shoelace";
+import { v4 as uuid } from "uuid";
 
 const lixOPFSPath = "temporary.lix";
 
@@ -32,18 +33,18 @@ export class App extends BaseElement {
     poll(
       () => {
         return lix.value?.db
-          .selectFrom("change")
+          .selectFrom("uncommitted_change")
           .select(({ fn }) => [fn.count<number>("id").as("count")])
           .executeTakeFirst();
       },
       (value) => {
-        if (value) this.numOustandingChanges = value?.count;
+        if (value) this.numUncommittedChanges = value?.count;
       }
     );
   }
 
   @state()
-  numOustandingChanges = 0;
+  numUncommittedChanges = 0;
 
   render() {
     return html`
@@ -60,7 +61,19 @@ export class App extends BaseElement {
         : html`<p>No lix loaded</p>`}
       <hr />
       <h2>Meta</h2>
-      <p>Uncommitted changes: ${this.numOustandingChanges}</p>
+      <div class="flex gap-4">
+        <p>Uncommitted changes: ${this.numUncommittedChanges}</p>
+        <button
+          @click=${async () => {
+            await lix.value!.commit({
+              userId: "samuel",
+              description: "Committing changes",
+            });
+          }}
+        >
+          Commit
+        </button>
+      </div>
       <hr />
       ${openFile.value ? html`<csv-view></csv-view>` : nothing}
     `;
@@ -74,7 +87,9 @@ export class InlangFileImport extends BaseElement {
     await lix.value?.db
       .insertInto("file")
       .values({
-        id: (Math.random() * 100).toFixed(),
+        // uuid.{file extension}
+        // jsi2089-28nz92.csv
+        id: uuid() + file.name.split(".").join(""),
         path: file.name,
         blob: await file.arrayBuffer(),
       })
