@@ -31,8 +31,6 @@ export class CsvView extends BaseElement {
   // another file has been selected
   connectedCallback(): void {
     super.connectedCallback();
-
-    const el = customElements.get("lix-diff-csv-cell");
     openFile.subscribe(() => this.parseCsvTask.run());
 
     poll(
