@@ -67,7 +67,6 @@ async function registerDiffComponents(plugins: LixPlugin[]) {
     for (const type in plugin.diffComponent) {
       const component = await plugin.diffComponent[type]();
       const name = "lix-diff-" + plugin.key + "-" + type;
-      console.log({ name });
       if (customElements.get(name) === undefined) {
         customElements.define(name, component);
       }

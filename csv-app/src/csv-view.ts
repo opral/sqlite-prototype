@@ -33,7 +33,6 @@ export class CsvView extends BaseElement {
     super.connectedCallback();
 
     const el = customElements.get("lix-diff-csv-cell");
-    console.log({ el });
     openFile.subscribe(() => this.parseCsvTask.run());
 
     poll(
@@ -170,12 +169,11 @@ export class CsvView extends BaseElement {
                                         // the top for the UI.
                                         const old = changes[index + 1]?.value;
                                         const neu = change.value;
-                                        const next = changes[index - 1]?.value;
                                         console.log({
                                           id: change.value.id,
+                                          index,
                                           old,
                                           neu,
-                                          next,
                                         });
                                         return html`
                                           <!-- TODO -->
@@ -183,15 +181,10 @@ export class CsvView extends BaseElement {
                                             <lix-diff-csv-cell
                                               .old=${old}
                                               .neu=${neu}
-                                              .next=${next}
+                                              .show="neu"
                                             >
                                             </lix-diff-csv-cell>
                                             <div class="p-0"></div>
-                                            <div class="text-sm ">
-                                              <div>
-                                                ${change.commit.description}
-                                              </div>
-                                            </div>
                                             <div class="text-sm italic">
                                               by ${change.commit.user_id}
                                               ${minutesAgo} minutes ago

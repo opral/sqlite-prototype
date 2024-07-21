@@ -97,110 +97,44 @@ const plugin = {
         static properties = {
           old: { type: Object },
           neu: { type: Object },
-          next: { type: Object },
+          show: { type: String },
         };
 
         old;
         neu;
-        next;
+        show;
 
         // TODO lix css variables for colors
         addedColor = "green";
         removedColor = "red";
 
-        connectedCallback() {
-          super.connectedCallback();
-          setInterval(() => {
-            this.requestUpdate();
-          }, 1000);
-        }
-
         render() {
-          debugger;
-          // no previous value or next value exits
-          // -> this is the latest change
-          if (this.neu && this.old === undefined && this.next === undefined) {
-            return lit.html`<span style="color: ${this.addedColor}">${this.neu.text}</span>`;
+          console.log("rerender");
+          if (this.old === undefined || this.neu === undefined) {
+            return lit.html`<span>${this.old?.text ?? this.neu?.text}</span>`;
           }
-          // no previous value but next value exists
-          // -> show as removed
-          else if (this.neu && this.next && this.old === undefined) {
-            const diff = diffWords(this.neu.text, this.next.text);
-            return lit.html`
+
+          const diff = diffWords(this.old.text, this.neu.text);
+
+          return lit.html`
               <span>
                 ${diff.map((part) => {
-                  if (part.added) {
+                  if (this.show === "neu" && part.removed) {
+                    return lit.nothing;
+                  } else if (this.show === "old" && part.added) {
                     return lit.nothing;
                   }
-                  const color = part.removed ? this.removedColor : "black";
+                  const color = part.added
+                    ? this.addedColor
+                    : part.removed
+                    ? this.removedColor
+                    : "black";
                   return lit.html`
                     <span style="color: ${color}">${part.value}</span>
                   `;
                 })}
               </span>
             `;
-          }
-          // all values exist
-          // -> show as removed because next value exists
-          else if (this.neu && this.next && this.old) {
-            const diff = diffWords(this.neu.text, this.next.text);
-            return lit.html`
-              <span>
-                ${diff.map((part) => {
-                  if (part.added) {
-                    return lit.nothing;
-                  }
-                  const color = part.removed ? this.removedColor : "black";
-                  return lit.html`
-                    <span style="color: ${color}">${part.value}</span>
-                  `;
-                })}
-              </span>
-            `;
-          }
-          // no next value but previous value exists
-          // -> show as added
-          else if (this.old && this.neu && this.next === undefined) {
-            const diff = diffWords(this.old.text, this.neu.text);
-            return lit.html`
-              <span>
-                ${diff.map((part) => {
-                  if (part.removed) {
-                    return lit.nothing;
-                  }
-                  const color = part.added ? this.addedColor : "black";
-                  return lit.html`
-                    <span style="color: ${color}">${part.value}</span>
-                  `;
-                })}
-              </span>
-            `;
-          }
-          // no next value and no previous value exists
-          // -> show as added
-          else if (
-            this.old &&
-            this.neu === undefined &&
-            this.next === undefined
-          ) {
-            const diff = diffWords(this.old.text, this.neu.text);
-            return lit.html`
-              <span>
-                ${diff.map((part) => {
-                  if (part.removed) {
-                    return lit.nothing;
-                  }
-                  const color = part.added ? this.addedColor : "black";
-                  return lit.html`
-                    <span style="color: ${color}">${part.value}</span>
-                  `;
-                })}
-              </span>
-            `;
-          }
-          throw new Error(
-            `invalid state: ${this.old.text} ${this.neu.text} ${this.next.text}`
-          );
         }
       };
     },

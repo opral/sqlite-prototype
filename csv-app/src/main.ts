@@ -85,21 +85,14 @@ export class LixActions extends BaseElement {
   numCommittedChanges = 0;
 
   @state()
-  showCommitDialog = false;
-
-  @state()
   username = "Samuel";
 
   async handleCommit() {
-    const description =
-      // @ts-expect-error - no types
-      this.shadowRoot!.getElementById("commit-description").value;
-
     await lix.value!.commit({
       userId: this.username,
-      description,
+      // TODO unbundle description from commits
+      description: "",
     });
-    this.showCommitDialog = false;
   }
 
   render() {
@@ -123,28 +116,7 @@ export class LixActions extends BaseElement {
           <p>Uncommitted changes: ${this.numUncommittedChanges}</p>
           <p>Committed changes: ${this.numCommittedChanges}</p>
         </div>
-        <button
-          @click=${() => {
-            this.showCommitDialog = true;
-          }}
-        >
-          Commit
-        </button>
-
-        ${this.showCommitDialog === false
-          ? nothing
-          : html` <dialog open class="z-50">
-              <p>Description</p>
-              <textarea
-                id="commit-description"
-                name="Text1"
-                cols="40"
-                rows="5"
-              ></textarea>
-              <form method="dialog">
-                <button @click=${this.handleCommit}>Commit changes</button>
-              </form>
-            </dialog>`}
+        <button @click=${this.handleCommit}>Commit</button>
       </div>
     `;
   }
