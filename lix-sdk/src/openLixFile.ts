@@ -35,6 +35,8 @@ export async function openLixFromOPFS(path: string) {
   END;
   `;
 
+  await registerDiffComponents(plugins);
+
   return {
     db,
     sql,
@@ -50,21 +52,27 @@ async function loadPlugins(sql: any) {
     SELECT * FROM file
     WHERE path GLOB 'lix/plugin/*'
   `;
-
   const decoder = new TextDecoder("utf8");
-  const plugins = await Promise.all(
-    pluginFiles.map(
-      async (file: any) =>
-        /* @vite-ignore */
-        (
-          await import(
-            "data:text/javascript;base64," + btoa(decoder.decode(file.blob))
-          )
-        ).default
-    )
-  );
-
+  let plugins: LixPlugin[] = [];
+  for (const plugin of pluginFiles) {
+    const text = btoa(decoder.decode(plugin.blob));
+    const pluginModule = await import("data:text/javascript;base64," + text);
+    plugins.push(pluginModule.default);
+  }
   return plugins as LixPlugin[];
+}
+
+async function registerDiffComponents(plugins: LixPlugin[]) {
+  for (const plugin of plugins) {
+    for (const type in plugin.diffComponent) {
+      const component = await plugin.diffComponent[type]();
+      const name = "lix-diff-" + plugin.key + "-" + type;
+      console.log({ name });
+      if (customElements.get(name) === undefined) {
+        customElements.define(name, component);
+      }
+    }
+  }
 }
 
 async function handleFileChange(args: {

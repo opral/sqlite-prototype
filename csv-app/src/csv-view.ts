@@ -31,6 +31,9 @@ export class CsvView extends BaseElement {
   // another file has been selected
   connectedCallback(): void {
     super.connectedCallback();
+
+    const el = customElements.get("lix-diff-csv-cell");
+    console.log({ el });
     openFile.subscribe(() => this.parseCsvTask.run());
 
     poll(
@@ -152,7 +155,7 @@ export class CsvView extends BaseElement {
                                 ${hasChanges === false
                                   ? html`<p>No change history</p>`
                                   : html`<div class="divide-y space-y-3">
-                                      ${changes.map((change) => {
+                                      ${changes.map((change, index) => {
                                         const now = new Date();
                                         const changeDate = new Date(
                                           change.commit.zoned_date_time
@@ -163,12 +166,27 @@ export class CsvView extends BaseElement {
                                         const minutesAgo = Math.floor(
                                           diff / 1000 / 60
                                         );
-
+                                        // reversed order. the newest change is at
+                                        // the top for the UI.
+                                        const old = changes[index + 1]?.value;
+                                        const neu = change.value;
+                                        const next = changes[index - 1]?.value;
+                                        console.log({
+                                          id: change.value.id,
+                                          old,
+                                          neu,
+                                          next,
+                                        });
                                         return html`
+                                          <!-- TODO -->
                                           <div class="space-y-2 pb-3">
-                                            <div class="p-0">
-                                              ${change.value.text}
-                                            </div>
+                                            <lix-diff-csv-cell
+                                              .old=${old}
+                                              .neu=${neu}
+                                              .next=${next}
+                                            >
+                                            </lix-diff-csv-cell>
+                                            <div class="p-0"></div>
                                             <div class="text-sm ">
                                               <div>
                                                 ${change.commit.description}

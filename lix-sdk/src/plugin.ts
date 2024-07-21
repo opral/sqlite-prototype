@@ -12,15 +12,12 @@ export type LixPlugin<
 > = {
   key: string;
   glob: string;
-  renderDiff?: {
-    file?: (args: {
-      old: LixFile["blob"];
-      neu: LixFile["blob"];
-    }) => Promise<any>;
+  diffComponent?: {
+    file?: () => Promise<HTMLElement>;
   } & Record<
     // other primitives
     keyof T,
-    ((args: { old: T[keyof T]; neu: T[keyof T] }) => Promise<any>) | undefined
+    () => Promise<HTMLElement> | undefined
   >;
   diff: {
     file?: (args: {
@@ -34,6 +31,12 @@ export type LixPlugin<
   >;
 };
 
+/**
+ * - diff reports do not contain html
+ *   to separate frontend from backend.
+ *   The frontend will render the diff reports
+ *   (without slowing down the backend on each diff request).
+ */
 export type DiffReport = {
   type: string;
   /**
