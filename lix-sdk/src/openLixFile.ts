@@ -102,10 +102,11 @@ async function handleFileChange(args: {
       old: args.oldBlob,
       neu: args.newBlob,
     });
+    debugger;
     for (const diff of diffs) {
-      const changeExists = await args.db
+      const previousUncomittedChange = await args.db
         .selectFrom("change")
-        .select("id")
+        .selectAll()
         .where((eb) => eb.ref("value", "->>").key("id"), "=", diff.value.id)
         .where("type", "=", diff.type)
         .where("file_id", "=", args.fileId)
@@ -113,23 +114,8 @@ async function handleFileChange(args: {
         .where("commit_id", "is", null)
         .executeTakeFirst();
 
-      if (changeExists) {
-        // overwrite the (uncomitted) change
-        // to avoid (potentially) saving every keystroke change
-        await args.db
-          .updateTable("change")
-          .where((eb) => eb.ref("value", "->>").key("id"), "=", diff.value.id)
-          .where("type", "=", diff.type)
-          .where("file_id", "=", args.fileId)
-          .where("plugin_key", "=", plugin.key)
-          .where("commit_id", "is", null)
-          .set({
-            // @ts-expect-error - database expects stringified json
-            value: JSON.stringify(diff.value),
-            meta: JSON.stringify(diff.meta),
-          })
-          .execute();
-      } else {
+      // no uncommitted change exists
+      if (previousUncomittedChange === undefined) {
         await args.db
           .insertInto("change")
           .values({
@@ -142,7 +128,59 @@ async function handleFileChange(args: {
             meta: JSON.stringify(diff.meta),
           })
           .execute();
+        continue;
       }
+
+      const previousCommittedChange = await args.db
+        .selectFrom("change")
+        .selectAll()
+        .where((eb) => eb.ref("value", "->>").key("id"), "=", diff.value.id)
+        .where("type", "=", diff.type)
+        .where("file_id", "=", args.fileId)
+        .where("commit_id", "is not", null)
+        .where("plugin_key", "=", plugin.key)
+        .innerJoin("commit", "commit.id", "change.commit_id")
+        .orderBy("commit.zoned_date_time desc")
+        .executeTakeFirst();
+
+      // working change exists but is identical to previously committed change
+      if (previousCommittedChange) {
+        const diffPreviousCommittedChange = await plugin.diff![diff.type]({
+          old: previousCommittedChange.value,
+          neu: diff.value,
+        });
+        if (diffPreviousCommittedChange.length === 0) {
+          // drop the change because it's identical
+          await args.db
+            .deleteFrom("change")
+            .where((eb) => eb.ref("value", "->>").key("id"), "=", diff.value.id)
+            .where("type", "=", diff.type)
+            .where("file_id", "=", args.fileId)
+            .where("plugin_key", "=", plugin.key)
+            .where("commit_id", "is", null)
+            .execute();
+          continue;
+        }
+      }
+
+      // working change exists but is different from previously committed change
+      // -> update the working change
+      // overwrite the (uncomitted) change
+      // to avoid (potentially) saving every keystroke change
+      await args.db
+        .updateTable("change")
+        .where((eb) => eb.ref("value", "->>").key("id"), "=", diff.value.id)
+        .where("type", "=", diff.type)
+        .where("file_id", "=", args.fileId)
+        .where("plugin_key", "=", plugin.key)
+        .where("commit_id", "is", null)
+        .set({
+          id: v4(),
+          // @ts-expect-error - database expects stringified json
+          value: JSON.stringify(diff.value),
+          meta: JSON.stringify(diff.meta),
+        })
+        .execute();
     }
   }
 }
