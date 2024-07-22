@@ -102,7 +102,6 @@ async function handleFileChange(args: {
       old: args.oldBlob,
       neu: args.newBlob,
     });
-    debugger;
     for (const diff of diffs) {
       const previousUncomittedChange = await args.db
         .selectFrom("change")

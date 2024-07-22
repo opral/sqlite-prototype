@@ -126,16 +126,66 @@ export class LixActions extends BaseElement {
 
 @customElement("file-importer")
 export class InlangFileImport extends BaseElement {
+  // https://shoelace.style/components/alert#the-toast-stack
+  static styles = css`
+    .sl-toast-stack {
+      left: 0;
+      right: auto;
+    }
+  `;
+
   async handleFileSelection(event: any) {
     const file: File = event.target.files[0];
-    await lix.value?.db
-      .insertInto("file")
-      .values({
-        id: uuid(),
-        path: file.name,
-        blob: await file.arrayBuffer(),
-      })
-      .execute();
+    // reset the input value so that the same file can be imported again
+    event.target.value = null;
+    const fileExists = await lix.value?.db
+      .selectFrom("file")
+      .selectAll()
+      .where("path", "is", file.name)
+      .executeTakeFirst();
+    // create new file
+    const fileArrayBuffer = await file.arrayBuffer();
+    if (fileExists === undefined) {
+      return await lix.value?.db
+        .insertInto("file")
+        .values({
+          id: uuid(),
+          path: file.name,
+          blob: fileArrayBuffer,
+        })
+        .execute();
+    }
+    // TODO non-hardcoded plugin
+    //      the app needs to choose a plugin (likely the one
+    //      it provides by itself, or lix has a plugin order
+    //      matching to closest match which always needs to be one)
+    const diffs = await lix.value!.plugins[0]!.diff!.file!({
+      old: fileExists.blob,
+      neu: fileArrayBuffer,
+    });
+    // if no diffs, show alert that the file has not been imported
+    if (diffs?.length === 0) {
+      const alert = Object.assign(document.createElement("sl-alert"), {
+        variant: "primary",
+        closable: true,
+        duration: 10000,
+        innerHTML: `
+          <b>File not imported</b>: The imported file is identical to the existing ${file.name} file.
+        `,
+      });
+      document.body.append(alert);
+      return alert.toast();
+    }
+    // diffs exists, show merge view
+    const dialog = Object.assign(document.createElement("sl-dialog"), {
+      style: `--width: 90vw;`,
+      label: "Resolve merge conflicts",
+      innerHTML: `
+        <p>File ${file.name} has been modified</p>
+      `,
+    });
+    document.body.append(dialog);
+    return dialog.show();
   }
 
   inputRef: Ref<HTMLInputElement> = createRef();
