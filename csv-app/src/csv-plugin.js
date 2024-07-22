@@ -17,6 +17,32 @@ let papaparse;
 const plugin = {
   key: "csv",
   glob: "*.csv",
+  // merge: {
+  //   file: async ({ old, neu, mergeConflicts }) => {
+  //     if (plugin.diff.cell(old['0-2'], neu['0-2'].length > 0) {
+  //       const oldx = await old.history.select("id").where("cell_id", "=", "0-2").where("value.text", "=", neu.text)
+  //       mergeConflicts.push({
+  //         type: "cell",
+  //         id: "0-2",
+  //         options: [
+  //           old,
+  //           neu,
+  //         ]
+  //         description: "conflict",
+  //       })
+  //     }
+  //     return {
+  //       id: neu.id,
+  //       file,
+  //     };
+  //   },
+  //   cell: async ({ old, neu, mergeConflicts }) => {
+
+  //     return {
+  //       id: neu.id,
+  //       text: neu.text,
+  //     };
+  // }
   diff: {
     file: async ({ old, neu }) => {
       /** @type {import("lix-sdk").DiffReport[]} */
