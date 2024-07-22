@@ -197,7 +197,7 @@ export class CsvView extends BaseElement {
                                                   .execute();
                                               }}
                                             >
-                                              Rollback
+                                              Restore
                                             </button>
                                           </div>
                                         `;
