@@ -173,10 +173,28 @@ async function handleFileInsert(args: {
         })
         .execute();
     }
-    await commit({
-      db: args.db,
-      userId: "system",
-      description: "Initial commit",
+    // commit changes for the file
+    return args.db.transaction().execute(async () => {
+      const commit = await args.db
+        .insertInto("commit")
+        .values({
+          id: v4(),
+          user_id: "system",
+          // todo - use zoned datetime
+          zoned_date_time: new Date().toISOString(),
+          description: "initial commit",
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+
+      return await args.db
+        .updateTable("change")
+        .where("commit_id", "is", null)
+        .where("file_id", "=", args.fileId)
+        .set({
+          commit_id: commit.id,
+        })
+        .execute();
     });
   }
 }
