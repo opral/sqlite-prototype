@@ -131,9 +131,7 @@ export class InlangFileImport extends BaseElement {
     await lix.value?.db
       .insertInto("file")
       .values({
-        // uuid.{file extension}
-        // jsi2089-28nz92.csv
-        id: uuid() + file.name.split(".").join(""),
+        id: uuid(),
         path: file.name,
         blob: await file.arrayBuffer(),
       })
