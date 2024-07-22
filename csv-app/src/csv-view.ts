@@ -165,27 +165,11 @@ export class CsvView extends BaseElement {
                                         const minutesAgo = Math.floor(
                                           diff / 1000 / 60
                                         );
-                                        // reversed order. the newest change is at
-                                        // the top for the UI.
-                                        const old = changes[index + 1]?.value;
-                                        const neu = change.value;
 
-                                        console.log({
-                                          id: change.value.id,
-                                          index,
-                                          old,
-                                          neu,
-                                        });
                                         return html`
                                           <!-- TODO -->
                                           <div class="space-y-2 pb-3">
-                                            <lix-diff-csv-cell
-                                              .old=${old}
-                                              .neu=${neu}
-                                            >
-                                            </lix-diff-csv-cell>
-                                     
-                                            </lix-diff-csv-cell>
+                                            <div>${change.value.text}</div>
                                             <div class="p-0"></div>
                                             <div class="text-sm italic">
                                               by ${change.commit.user_id}
