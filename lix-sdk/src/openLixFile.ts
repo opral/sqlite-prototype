@@ -87,7 +87,6 @@ async function handleFileChange(args: {
       neu: args.newBlob,
     });
     for (const diff of diffs) {
-      debugger;
       const changeExists = await args.db
         .selectFrom("change")
         .select("id")
@@ -107,6 +106,7 @@ async function handleFileChange(args: {
           .where("type", "=", diff.type)
           .where("file_id", "=", args.fileId)
           .where("plugin_key", "=", plugin.key)
+          .where("commit_id", "is", null)
           .set({
             // @ts-expect-error - database expects stringified json
             value: JSON.stringify(diff.value),
