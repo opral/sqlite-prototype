@@ -35,6 +35,22 @@ export async function openLixFromOPFS(path: string) {
   END;
   `;
 
+  await createCallbackFunction("fileInserted", (fileId, newBlob) =>
+    handleFileInsert({
+      fileId,
+      newBlob,
+      plugins,
+      db,
+    })
+  );
+
+  await sql`
+  CREATE TEMP TRIGGER file_inserted AFTER INSERT ON File
+  BEGIN
+    SELECT fileInserted(NEW.id, NEW.blob);
+  END;
+  `;
+
   await registerDiffComponents(plugins);
 
   return {
@@ -128,5 +144,39 @@ async function handleFileChange(args: {
           .execute();
       }
     }
+  }
+}
+
+// creates initial commit
+async function handleFileInsert(args: {
+  fileId;
+  newBlob;
+  plugins: LixPlugin[];
+  db: Kysely<Database>;
+}) {
+  for (const plugin of args.plugins) {
+    const diffs = await plugin.diff!.file!({
+      old: undefined,
+      neu: args.newBlob,
+    });
+    for (const diff of diffs) {
+      await args.db
+        .insertInto("change")
+        .values({
+          id: v4(),
+          type: diff.type,
+          file_id: args.fileId,
+          plugin_key: plugin.key,
+          // @ts-expect-error - database expects stringified json
+          value: JSON.stringify(diff.value),
+          meta: JSON.stringify(diff.meta),
+        })
+        .execute();
+    }
+    await commit({
+      db: args.db,
+      userId: "system",
+      description: "Initial commit",
+    });
   }
 }

@@ -21,13 +21,13 @@ export type LixPlugin<
   >;
   diff: {
     file?: (args: {
-      old: LixFile["blob"];
+      old?: LixFile["blob"];
       neu: LixFile["blob"];
     }) => Promise<Array<DiffReport>>;
   } & Record<
     // other primitives
     keyof T,
-    (args: { old: T[keyof T]; neu: T[keyof T] }) => Promise<Array<DiffReport>>
+    (args: { old?: T[keyof T]; neu: T[keyof T] }) => Promise<Array<DiffReport>>
   >;
 };
 

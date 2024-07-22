@@ -53,26 +53,27 @@ const plugin = {
         papaparse = (await import("http://localhost:5173/papaparse.js"))
           .default;
       }
-      const oldParsed = papaparse.parse(new TextDecoder().decode(old), {
-        header: true,
-      });
+      const oldParsed = old
+        ? papaparse.parse(new TextDecoder().decode(old), {
+            header: true,
+          })
+        : undefined;
       const newParsed = papaparse.parse(new TextDecoder().decode(neu), {
         header: true,
       });
 
       for (const [i, row] of newParsed.data.entries()) {
-        const oldRow = oldParsed.data[i];
-        if (!oldRow) {
-          continue;
-        }
+        const oldRow = oldParsed?.data[i];
         let j = 0;
         for (const column in row) {
           const id = `${i}-${j}`;
           const diff = await plugin.diff.cell({
-            old: {
-              id,
-              text: oldRow[column],
-            },
+            old: oldRow
+              ? {
+                  id,
+                  text: oldRow[column],
+                }
+              : undefined,
             neu: {
               id,
               text: row[column],
@@ -87,7 +88,7 @@ const plugin = {
       return result;
     },
     cell: async ({ old, neu }) => {
-      if (old.text === neu.text) {
+      if (old?.text === neu.text) {
         return [];
       } else {
         return [
