@@ -82,46 +82,48 @@ async function handleFileChange(args: {
   db: Kysely<Database>;
 }) {
   for (const plugin of args.plugins) {
-    const changes = await plugin.diff!.file!({
+    const diffs = await plugin.diff!.file!({
       old: args.oldBlob,
       neu: args.newBlob,
     });
-    for (const change of changes) {
+    for (const diff of diffs) {
+      debugger;
       const changeExists = await args.db
-        .selectFrom("uncommitted_change")
+        .selectFrom("change")
         .select("id")
-        .where((eb) => eb.ref("value", "->>").key("id"), "=", change.value.id)
-        .where("type", "=", change.type)
+        .where((eb) => eb.ref("value", "->>").key("id"), "=", diff.value.id)
+        .where("type", "=", diff.type)
         .where("file_id", "=", args.fileId)
         .where("plugin_key", "=", plugin.key)
+        .where("commit_id", "is", null)
         .executeTakeFirst();
 
       if (changeExists) {
         // overwrite the (uncomitted) change
         // to avoid (potentially) saving every keystroke change
         await args.db
-          .updateTable("uncommitted_change")
-          .where((eb) => eb.ref("value", "->>").key("id"), "=", change.value.id)
-          .where("type", "=", change.type)
+          .updateTable("change")
+          .where((eb) => eb.ref("value", "->>").key("id"), "=", diff.value.id)
+          .where("type", "=", diff.type)
           .where("file_id", "=", args.fileId)
           .where("plugin_key", "=", plugin.key)
           .set({
             // @ts-expect-error - database expects stringified json
-            value: JSON.stringify(change.value),
-            meta: JSON.stringify(change.meta),
+            value: JSON.stringify(diff.value),
+            meta: JSON.stringify(diff.meta),
           })
           .execute();
       } else {
         await args.db
-          .insertInto("uncommitted_change")
+          .insertInto("change")
           .values({
             id: v4(),
-            type: change.type,
+            type: diff.type,
             file_id: args.fileId,
             plugin_key: plugin.key,
             // @ts-expect-error - database expects stringified json
-            value: JSON.stringify(change.value),
-            meta: JSON.stringify(change.meta),
+            value: JSON.stringify(diff.value),
+            meta: JSON.stringify(diff.meta),
           })
           .execute();
       }

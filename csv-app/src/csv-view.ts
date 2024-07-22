@@ -6,7 +6,7 @@ import Papa from "papaparse";
 import { classMap } from "lit/directives/class-map.js";
 import { repeat } from "lit/directives/repeat.js";
 import { poll } from "./reactivity";
-import { Change, UncommittedChange, Commit } from "../../lix-sdk/src/schema";
+import { Change, Commit } from "../../lix-sdk/src/schema";
 import { BaseElement } from "./baseElement";
 import { jsonObjectFrom } from "lix-sdk";
 
@@ -39,9 +39,10 @@ export class CsvView extends BaseElement {
           return undefined;
         }
         const uncommittedChanges = await lix.value?.db
-          .selectFrom("uncommitted_change")
+          .selectFrom("change")
           .selectAll()
           .where("file_id", "=", this.fileId)
+          .where("commit_id", "is", null)
           .execute();
 
         const changes = await lix.value?.db
@@ -61,6 +62,7 @@ export class CsvView extends BaseElement {
             ).as("commit")
           )
           .where("file_id", "=", this.fileId)
+          .where("commit_id", "is not", null)
           .innerJoin("commit", "commit.id", "change.commit_id")
           .orderBy("commit.zoned_date_time", "desc")
           .execute();
@@ -77,7 +79,7 @@ export class CsvView extends BaseElement {
   }
 
   @state()
-  uncommittedChanges: UncommittedChange[] = [];
+  uncommittedChanges: Change[] = [];
 
   @state()
   changes: (Change & { commit: Commit })[] = [];
@@ -167,6 +169,7 @@ export class CsvView extends BaseElement {
                                         // the top for the UI.
                                         const old = changes[index + 1]?.value;
                                         const neu = change.value;
+
                                         console.log({
                                           id: change.value.id,
                                           index,
@@ -179,8 +182,9 @@ export class CsvView extends BaseElement {
                                             <lix-diff-csv-cell
                                               .old=${old}
                                               .neu=${neu}
-                                              .show="neu"
                                             >
+                                            </lix-diff-csv-cell>
+                                     
                                             </lix-diff-csv-cell>
                                             <div class="p-0"></div>
                                             <div class="text-sm italic">

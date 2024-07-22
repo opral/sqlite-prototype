@@ -8,16 +8,15 @@ export async function commit(args: {
   description: string;
 }) {
   const uncommittedChanges = await args.db
-    .selectFrom("uncommitted_change")
+    .selectFrom("change")
     .selectAll()
+    .where("commit_id", "is", null)
     .execute();
 
   if (uncommittedChanges.length === 0) {
     console.log("No changes to commit");
     return;
   }
-
-  console.log({ uncommittedChanges });
 
   const commit = await args.db
     .insertInto("commit")
@@ -31,24 +30,13 @@ export async function commit(args: {
     .returning("id")
     .executeTakeFirstOrThrow();
 
-  await args.db
-    .insertInto("change")
-    .values(
-      // @ts-expect-error - database expects stringified json
-      uncommittedChanges.map((change) => ({
-        ...change,
-        id: v4(),
-        meta: JSON.stringify(change.meta),
-        value: JSON.stringify(change.value),
-        commit_id: commit.id,
-      }))
-    )
-    .execute();
-
   for (const change of uncommittedChanges) {
     await args.db
-      .deleteFrom("uncommitted_change")
+      .updateTable("change")
       .where("id", "=", change.id)
+      .set({
+        commit_id: commit.id,
+      })
       .execute();
   }
   console.log("Committed changes");

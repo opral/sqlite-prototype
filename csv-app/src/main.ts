@@ -60,12 +60,14 @@ export class LixActions extends BaseElement {
     poll(
       async () => {
         const numUncommittedChanges = await lix.value?.db
-          .selectFrom("uncommitted_change")
+          .selectFrom("change")
           .select(({ fn }) => [fn.count<number>("id").as("count")])
+          .where("commit_id", "is", null)
           .executeTakeFirst();
         const comittedChanges = await lix.value?.db
-          .selectFrom("commit")
+          .selectFrom("change")
           .select(({ fn }) => [fn.count<number>("id").as("count")])
+          .where("commit_id", "is not", null)
           .executeTakeFirst();
         return { numUncommittedChanges, comittedChanges };
       },
