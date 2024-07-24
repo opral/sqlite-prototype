@@ -19,6 +19,9 @@ export type LixPlugin<
     keyof T,
     () => Promise<HTMLElement> | undefined
   >;
+
+  merge: any;
+  
   diff: {
     file?: (args: {
       old?: LixFile["blob"];
