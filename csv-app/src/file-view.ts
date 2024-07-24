@@ -1,6 +1,5 @@
 import { html, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { lix, openFile } from "./state";
 import { poll } from "./reactivity";
 import { BaseElement } from "./baseElement";
 
@@ -13,14 +12,14 @@ export class FileView extends BaseElement {
     super.connectedCallback();
     poll(
       async () => {
-        const result: any = await lix.value?.db
+        const result: any = await  this.lix?.db
           .selectFrom("file")
           .select(["id", "path"])
           .execute();
 
         if (result && result.length > 0) {
           for (const file of result) {
-            const uncommittedChanges = await lix.value?.db
+            const uncommittedChanges = await this.lix?.db
               .selectFrom("change")
               .select("id")
               .where("file_id", "=", file.id)
@@ -48,13 +47,13 @@ export class FileView extends BaseElement {
             ${this.files.map(
               (file: any) =>
                 html`<li
-                  style="${openFile.value === file.path
+                  style="${this.openFile === file.path
                     ? "font-weight: 800"
                     : ""}"
                 >
                   <div style="display: flex; justify-content: space-between;">
                     <div class="flex items-center gap-2">
-                      <p @click=${() => (openFile.value = file.path)}>
+                      <p @click=${() => (this.openFile = file.path)}>
                         ${file.path}
                       </p>
                       ${file.hasUncommittedChanges
@@ -72,7 +71,7 @@ export class FileView extends BaseElement {
                     <div style="display: flex; gap: 1rem">
                       <button
                         @click=${async () => {
-                          const result = await lix.value?.db
+                          const result = await  this.lix?.db
                             .selectFrom("file")
                             .select("blob")
                             .where("path", "=", file.path)
@@ -89,7 +88,7 @@ export class FileView extends BaseElement {
                       </button>
                       <button
                         @click=${async () => {
-                          await lix.value?.db
+                          await  this.lix?.db
                             .deleteFrom("file")
                             .where("path", "=", file.path)
                             .execute();
