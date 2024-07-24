@@ -32,6 +32,7 @@ export type Change = {
    * the change is considered uncommitted.
    */
   commit_id?: Commit["id"];
+  zoned_date_time: string;
   /**
    * The plugin key that contributed the change.
    *
@@ -59,6 +60,9 @@ export type Change = {
   value: Record<string, any> & {
     id: string;
   }; // JSONB
+
+  conflict?: any[];
+
   /**
    * Additional metadata for the change used by the plugin
    * to process changes.
