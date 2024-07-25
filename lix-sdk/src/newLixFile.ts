@@ -12,7 +12,6 @@ export async function newLixFile(): Promise<Blob> {
   try {
     const { sql, destroy } = new SQLocal(interimDbName);
     await sql`
-
     CREATE TABLE file (
       id TEXT PRIMARY KEY,
       path TEXT NOT NULL,
@@ -26,8 +25,10 @@ export async function newLixFile(): Promise<Blob> {
       file_id TEXT NOT NULL,
       plugin_key TEXT NOT NULL,
       value TEXT NOT NULL,
+      conflict TEXT,
       meta TEXT,
-      commit_id TEXT
+      commit_id TEXT,
+      zoned_date_time TEXT NOT NULL
     ) strict;
 
     CREATE TABLE 'commit' (
