@@ -13,21 +13,21 @@ export type LixPlugin<
   key: string;
   glob: string;
   diffComponent?: {
-    file?: () => Promise<HTMLElement>;
+    file?: () => MaybePromise<HTMLElement>;
   } & Record<
     // other primitives
     keyof T,
-    () => Promise<HTMLElement> | undefined
+    () => MaybePromise<HTMLElement> | undefined
   >;
   diff: {
     file?: (args: {
       old?: LixFile["blob"];
       neu: LixFile["blob"];
-    }) => Promise<Array<DiffReport>>;
+    }) => MaybePromise<Array<DiffReport>>;
   } & Record<
     // other primitives
     keyof T,
-    (args: { old?: T[keyof T]; neu: T[keyof T] }) => Promise<Array<DiffReport>>
+    (args: { old?: T[keyof T]; neu: T[keyof T] }) => MaybePromise<Array<DiffReport>>
   >;
 };
 
@@ -47,3 +47,6 @@ export type DiffReport = {
   };
   meta?: Record<string, any>;
 };
+
+
+type MaybePromise<T> = T | Promise<T>;

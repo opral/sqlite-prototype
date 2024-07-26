@@ -138,14 +138,14 @@ export class InlangFileImport extends BaseElement {
     const file: File = event.target.files[0];
     // reset the input value so that the same file can be imported again
     event.target.value = null;
-    const fileExists = await lix.value?.db
+    const existingFile = await lix.value?.db
       .selectFrom("file")
       .selectAll()
       .where("path", "is", file.name)
       .executeTakeFirst();
     // create new file
     const fileArrayBuffer = await file.arrayBuffer();
-    if (fileExists === undefined) {
+    if (existingFile === undefined) {
       return await lix.value?.db
         .insertInto("file")
         .values({
@@ -159,8 +159,9 @@ export class InlangFileImport extends BaseElement {
     //      the app needs to choose a plugin (likely the one
     //      it provides by itself, or lix has a plugin order
     //      matching to closest match which always needs to be one)
-    const diffs = await lix.value!.plugins[0]!.diff!.file!({
-      old: fileExists.blob,
+    const plugin = lix.value!.plugins[0]!;
+    const diffs = await plugin.diff!.file!({
+      old: existingFile.blob,
       neu: fileArrayBuffer,
     });
     // if no diffs, show alert that the file has not been imported
@@ -180,10 +181,13 @@ export class InlangFileImport extends BaseElement {
     const dialog = Object.assign(document.createElement("sl-dialog"), {
       style: `--width: 90vw;`,
       label: "Resolve merge conflicts",
-      innerHTML: `
-        <p>File ${file.name} has been modified</p>
-      `,
     });
+    const differ = document.createElement(`lix-diff-${plugin.key}-file`);
+    // @ts-expect-error - no type given for html element
+    differ.old = existingFile.blob;
+    // @ts-expect-error -
+    differ.neu = fileArrayBuffer;
+    dialog.append(differ);
     document.body.append(dialog);
     return dialog.show();
   }
