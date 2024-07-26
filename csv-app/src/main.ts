@@ -1,8 +1,7 @@
-import { LitElement, html, nothing, css } from "lit";
+import { html, nothing, css } from "lit";
 import { customElement, state, property } from "lit/decorators.js";
 import { Ref, createRef, ref } from "lit/directives/ref.js";
 import { newLixFile, openLixFromOPFS } from "lix-sdk";
-import { lix, openFile } from "./state";
 import "./file-view";
 import "./csv-view";
 // @ts-expect-error - no types
@@ -11,20 +10,31 @@ import { poll } from "./reactivity";
 import { BaseElement } from "./baseElement";
 import "@shoelace-style/shoelace";
 import { v4 as uuid } from "uuid";
-
-const lixOPFSPath = "temporary.lix";
+import { consume, provide } from "@lit/context";
+import { lixContext, openFileContext } from "./contexts";
 
 @customElement("csv-app")
 export class App extends BaseElement {
-  constructor() {
-    super();
-    if (lix.value === undefined) {
+  @property({ attribute: true })
+  path = "instance-a.lix";
+
+  @state()
+  @provide({ context: lixContext })
+  lix?: Awaited<ReturnType<typeof openLixFromOPFS>>;
+
+  @state()
+  @provide({ context: openFileContext })
+  openFile?: string;
+
+  connectedCallback() {
+    super.connectedCallback();
+    if (this.lix === undefined) {
       navigator.storage.getDirectory().then(async (dir) => {
         try {
-          await dir.getFileHandle(lixOPFSPath, {
+          await dir.getFileHandle(this.path, {
             create: false,
           });
-          lix.value = await openLixFromOPFS(lixOPFSPath);
+          this.lix = await openLixFromOPFS(this.path);
         } catch {
           // do nothing, file doesn't exist
         }
@@ -34,37 +44,59 @@ export class App extends BaseElement {
 
   render() {
     return html`
-      <h1>Welcome to Opral CSV</h1>
+      <h1>${this.path}</h1>
       <div style="display: flex; gap: 2rem;">
-        <create-project></create-project>
+        <create-project
+          .lixPath=${this.path}
+          @lix-created=${(e) => {
+            this.lix = e.detail;
+          }}
+        ></create-project>
         <file-importer></file-importer>
       </div>
       <hr style="margin-top: 1rem;" />
-      ${lix.value
+      ${this.lix
         ? html`<div>
-            <file-view></file-view>
+            <file-view
+              @file-select=${(file) => (this.openFile = file.detail)}
+            ></file-view>
           </div>`
         : html`<p>No lix loaded</p>`}
       <hr />
       <lix-actions></lix-actions>
       <hr />
-      ${openFile.value ? html`<csv-view></csv-view>` : nothing}
+      ${this.openFile ? html`<csv-view></csv-view>` : nothing}
     `;
   }
 }
 
 @customElement("lix-actions")
 export class LixActions extends BaseElement {
+  @consume({ context: lixContext, subscribe: true })
+  lix?: Awaited<ReturnType<typeof openLixFromOPFS>>;
+
+  @consume({ context: openFileContext, subscribe: true })
+  openFile?: string;
+
+  @state()
+  numUncommittedChanges = 0;
+
+  @state()
+  numCommittedChanges = 0;
+
+  @state()
+  username = "Samuel";
+
   connectedCallback(): void {
     super.connectedCallback();
     poll(
       async () => {
-        const numUncommittedChanges = await lix.value?.db
+        const numUncommittedChanges = await this.lix?.db
           .selectFrom("change")
           .select(({ fn }) => [fn.count<number>("id").as("count")])
           .where("commit_id", "is", null)
           .executeTakeFirst();
-        const comittedChanges = await lix.value?.db
+        const comittedChanges = await this.lix?.db
           .selectFrom("change")
           .select(({ fn }) => [fn.count<number>("id").as("count")])
           .where("commit_id", "is not", null)
@@ -80,17 +112,8 @@ export class LixActions extends BaseElement {
     );
   }
 
-  @state()
-  numUncommittedChanges = 0;
-
-  @state()
-  numCommittedChanges = 0;
-
-  @state()
-  username = "Samuel";
-
   async handleCommit() {
-    await lix.value!.commit({
+    await this.lix!.commit({
       userId: this.username,
       // TODO unbundle description from commits
       description: "",
@@ -100,7 +123,6 @@ export class LixActions extends BaseElement {
   render() {
     return html`
       <h2>Lix actions</h2>
-      <!-- name -->
       <div>
         <label for="name">Name</label>
         <input
@@ -126,6 +148,9 @@ export class LixActions extends BaseElement {
 
 @customElement("file-importer")
 export class InlangFileImport extends BaseElement {
+  @consume({ context: lixContext, subscribe: true })
+  lix?: Awaited<ReturnType<typeof openLixFromOPFS>>;
+
   // https://shoelace.style/components/alert#the-toast-stack
   static styles = css`
     .sl-toast-stack {
@@ -138,7 +163,7 @@ export class InlangFileImport extends BaseElement {
     const file: File = event.target.files[0];
     // reset the input value so that the same file can be imported again
     event.target.value = null;
-    const existingFile = await lix.value?.db
+    const existingFile = await this.lix?.db
       .selectFrom("file")
       .selectAll()
       .where("path", "is", file.name)
@@ -146,7 +171,7 @@ export class InlangFileImport extends BaseElement {
     // create new file
     const fileArrayBuffer = await file.arrayBuffer();
     if (existingFile === undefined) {
-      return await lix.value?.db
+      return await this.lix?.db
         .insertInto("file")
         .values({
           id: uuid(),
@@ -159,7 +184,7 @@ export class InlangFileImport extends BaseElement {
     //      the app needs to choose a plugin (likely the one
     //      it provides by itself, or lix has a plugin order
     //      matching to closest match which always needs to be one)
-    const plugin = lix.value!.plugins[0]!;
+    const plugin = this.lix!.plugins[0]!;
     const diffs = await plugin.diff!.file!({
       old: existingFile.blob,
       neu: fileArrayBuffer,
@@ -215,11 +240,18 @@ export class InlangFileImport extends BaseElement {
 
 @customElement("create-project")
 export class CreateProject extends BaseElement {
+  @consume({ context: lixContext, subscribe: true })
+  lix?: Awaited<ReturnType<typeof openLixFromOPFS>>;
+
+  @property()
+  lixPath: string = "";
+
   async handleCreateProject() {
     const file = await newLixFile();
-    await saveInOPFS({ blob: file, path: lixOPFSPath });
-    lix.value = await openLixFromOPFS(lixOPFSPath);
-    await lix.value.db
+    await saveInOPFS({ blob: file, path: this.lixPath });
+    const lix = await openLixFromOPFS(this.lixPath);
+
+    await lix.db
       .insertInto("file")
       .values({
         id: "in280ns08n08n2",
@@ -227,6 +259,8 @@ export class CreateProject extends BaseElement {
         blob: new TextEncoder().encode(plugin),
       })
       .execute();
+
+    this.dispatchEvent(new CustomEvent("lix-created", { detail: lix }));
   }
 
   render() {

@@ -1,6 +1,5 @@
 import { html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { lix, openFile } from "./state";
 import { Task } from "@lit/task";
 import Papa from "papaparse";
 import { classMap } from "lit/directives/class-map.js";
@@ -8,17 +7,34 @@ import { repeat } from "lit/directives/repeat.js";
 import { poll } from "./reactivity";
 import { Change, Commit } from "../../lix-sdk/src/schema";
 import { BaseElement } from "./baseElement";
-import { jsonObjectFrom } from "lix-sdk";
+import { jsonObjectFrom, openLixFromOPFS } from "lix-sdk";
+import { consume } from "@lit/context";
+import { lixContext, openFileContext } from "./contexts";
 
 @customElement("csv-view")
 export class CsvView extends BaseElement {
+  @consume({ context: lixContext, subscribe: true })
+  lix?: Awaited<ReturnType<typeof openLixFromOPFS>>;
+
+  @consume({ context: openFileContext, subscribe: true })
+  openFile?: string;
+
+  @state()
+  uncommittedChanges: Change[] = [];
+
+  @state()
+  changes: (Change & { commit: Commit })[] = [];
+
+  @state()
+  fileId?: string = undefined;
+
   parseCsvTask = new Task(this, {
     args: () => [],
     task: async () => {
-      const result = await lix.value?.db
+      const result = await this.lix?.db
         .selectFrom("file")
         .select(["id", "blob"])
-        .where("path", "=", openFile.value!)
+        .where("path", "=", this.openFile!)
         .executeTakeFirstOrThrow();
       this.fileId = result!.id;
       const decoder = new TextDecoder();
@@ -31,21 +47,20 @@ export class CsvView extends BaseElement {
   // another file has been selected
   connectedCallback(): void {
     super.connectedCallback();
-    openFile.subscribe(() => this.parseCsvTask.run());
 
     poll(
       async () => {
         if (this.fileId === undefined) {
           return undefined;
         }
-        const uncommittedChanges = await lix.value?.db
+        const uncommittedChanges = await this.lix?.db
           .selectFrom("change")
           .selectAll()
           .where("file_id", "=", this.fileId)
           .where("commit_id", "is", null)
           .execute();
 
-        const changes = await lix.value?.db
+        const changes = await this.lix?.db
           .selectFrom("change")
           .selectAll()
           .select((eb) =>
@@ -77,15 +92,6 @@ export class CsvView extends BaseElement {
       }
     );
   }
-
-  @state()
-  uncommittedChanges: Change[] = [];
-
-  @state()
-  changes: (Change & { commit: Commit })[] = [];
-
-  @state()
-  fileId?: string = undefined;
 
   render() {
     return html`
@@ -133,14 +139,14 @@ export class CsvView extends BaseElement {
                                 csv.data[csv.data.indexOf(row)][field] =
                                   event.target.value;
                                 // manually saving file to lix
-                                lix.value?.db
+                                this.lix?.db
                                   .updateTable("file")
                                   .set({
                                     blob: new TextEncoder().encode(
                                       Papa.unparse(csv.data)
                                     ),
                                   })
-                                  .where("path", "=", openFile.value!)
+                                  .where("path", "=", this.openFile!)
                                   .execute();
                               }}
                             />
@@ -182,7 +188,7 @@ export class CsvView extends BaseElement {
                                                   field
                                                 ] = change.value.text;
                                                 // manually saving file to lix
-                                                lix.value?.db
+                                                this.lix?.db
                                                   .updateTable("file")
                                                   .set({
                                                     blob: new TextEncoder().encode(
@@ -192,7 +198,7 @@ export class CsvView extends BaseElement {
                                                   .where(
                                                     "path",
                                                     "=",
-                                                    openFile.value!
+                                                    this.openFile!
                                                   )
                                                   .execute();
                                               }}

@@ -27,7 +27,6 @@ export class FinkApp extends SignalWatcher(LitElement) {
 export class InlangFileImport extends LitElement {
   async handleFileSelection(event: any) {
     project.value = await loadProject(event.target.files[0]);
-    console.log({ project: project.value });
   }
 
   inputRef: Ref<HTMLInputElement> = createRef();
