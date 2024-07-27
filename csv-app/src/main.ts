@@ -35,7 +35,8 @@ export class App extends BaseElement {
             create: false,
           });
           this.lix = await openLixFromOPFS(this.path);
-        } catch {
+        } catch (e) {
+          console.warn(e);
           // do nothing, file doesn't exist
         }
       });
@@ -205,14 +206,26 @@ export class InlangFileImport extends BaseElement {
     // diffs exists, show merge view
     const dialog = Object.assign(document.createElement("sl-dialog"), {
       style: `--width: 90vw;`,
-      label: "Resolve merge conflicts",
+      label: `${diffs.length} diffs `,
     });
-    const differ = document.createElement(`lix-diff-${plugin.key}-file`);
+    const differ = document.createElement(`lix-plugin-${plugin.key}-diff-file`);
     // @ts-expect-error - no type given for html element
     differ.old = existingFile.blob;
     // @ts-expect-error -
     differ.neu = fileArrayBuffer;
     dialog.append(differ);
+    dialog.append(
+      Object.assign(document.createElement("button"), {
+        innerHTML: "Import",
+        onclick: async () => {
+          await this.lix!.db.updateTable("file")
+            .set({ blob: fileArrayBuffer })
+            .where("path", "=", file.name)
+            .execute();
+          dialog.hide();
+        },
+      })
+    );
     document.body.append(dialog);
     return dialog.show();
   }

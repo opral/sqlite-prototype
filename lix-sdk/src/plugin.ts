@@ -12,22 +12,24 @@ export type LixPlugin<
 > = {
   key: string;
   glob: string;
+  // getting around bundling for the prototype
+  setup?: () => Promise<void>;
   diffComponent?: {
-    file?: () => MaybePromise<HTMLElement>;
+    file?: () => HTMLElement;
   } & Record<
     // other primitives
     keyof T,
-    () => MaybePromise<HTMLElement> | undefined
+    () => HTMLElement | undefined
   >;
   diff: {
     file?: (args: {
       old?: LixFile["blob"];
       neu: LixFile["blob"];
-    }) => MaybePromise<Array<DiffReport>>;
+    }) => Array<DiffReport>;
   } & Record<
     // other primitives
     keyof T,
-    (args: { old?: T[keyof T]; neu: T[keyof T] }) => MaybePromise<Array<DiffReport>>
+    (args: { old?: T[keyof T]; neu: T[keyof T] }) => Array<DiffReport>
   >;
 };
 
@@ -47,6 +49,3 @@ export type DiffReport = {
   };
   meta?: Record<string, any>;
 };
-
-
-type MaybePromise<T> = T | Promise<T>;

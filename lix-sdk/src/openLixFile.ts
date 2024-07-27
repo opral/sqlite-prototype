@@ -74,6 +74,9 @@ async function loadPlugins(sql: any) {
     const text = btoa(decoder.decode(plugin.blob));
     const pluginModule = await import("data:text/javascript;base64," + text);
     plugins.push(pluginModule.default);
+    if (pluginModule.default.setup) {
+      await pluginModule.default.setup();
+    }
   }
   return plugins as LixPlugin[];
 }
@@ -81,10 +84,11 @@ async function loadPlugins(sql: any) {
 async function registerDiffComponents(plugins: LixPlugin[]) {
   for (const plugin of plugins) {
     for (const type in plugin.diffComponent) {
-      const component = await plugin.diffComponent[type]();
-      const name = "lix-diff-" + plugin.key + "-" + type;
+      const component = plugin.diffComponent[type]();
+      const name = "lix-plugin-" + plugin.key + "-diff-" + type;
       if (customElements.get(name) === undefined) {
         customElements.define(name, component);
+        console.log("registered component ", name);
       }
     }
   }
